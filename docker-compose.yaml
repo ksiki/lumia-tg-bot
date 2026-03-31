@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres-lumia
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lumia_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - "D:/docker/volumes/postgres:/var/lib/postgresql"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d lumia_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:trixie
+    container_name: redis-lumia
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  bot:
+    build: .
+    container_name: lumia-tg-bot
+    restart: always
+    env_file:
+      - bot/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - .:/app
+    command: python bot/aiogram_run.py
