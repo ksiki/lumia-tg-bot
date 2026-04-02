@@ -13,13 +13,14 @@ services:
       - "./bot/database/init/DDL_create_dim_tables.sql:/docker-entrypoint-initdb.d/02_create_dim_tables.sql"
       - "./bot/database/init/DML_load_dimensions.sql:/docker-entrypoint-initdb.d/03_load_dimensions.sql"
       - "./bot/database/init/DDL_create_fact_tables.sql:/docker-entrypoint-initdb.d/04_create_fact_tables.sql"
-      - "./bot/database/init/DDL_create_mart_schema.sql:/docker-entrypoint-initdb.d/05_create_mart_schema.sql"
-      - "./bot/database/init/DDL_calculation_views.sql:/docker-entrypoint-initdb.d/06_calculation_views.sql"
-      - "./bot/database/init/DDL_create_API_schema.sql:/docker-entrypoint-initdb.d/07_create_API_schema.sql"
-      - "./bot/database/init/DDL_create_procedures.sql:/docker-entrypoint-initdb.d/08_create_procedures.sql"
-      - "./bot/database/init/DCL_grant_permissions.sh:/docker-entrypoint-initdb.d/09_grant_permissions.sh"
+      - "./bot/database/init/DDL_create_indexes.sql:/docker-entrypoint-initdb.d/05_create_indexes.sql"
+      - "./bot/database/init/DDL_create_mart_schema.sql:/docker-entrypoint-initdb.d/06_create_mart_schema.sql"
+      - "./bot/database/init/DDL_calculation_views.sql:/docker-entrypoint-initdb.d/07_calculation_views.sql"
+      - "./bot/database/init/DDL_create_API_schema.sql:/docker-entrypoint-initdb.d/08_create_API_schema.sql"
+      - "./bot/database/init/DDL_create_procedures.sql:/docker-entrypoint-initdb.d/09_create_procedures.sql"
+      - "./bot/database/init/DCL_grant_permissions.sh:/docker-entrypoint-initdb.d/10_grant_permissions.sh"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d lumia_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -30,10 +31,15 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   bot:
     build: .
-    container_name: lumia-tg-bot
+    container_name: lumia-guide-tg
     restart: always
     depends_on:
       postgres:
