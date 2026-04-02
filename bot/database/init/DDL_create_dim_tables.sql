@@ -1,20 +1,8 @@
-create table if not exists dwh.d_country (
-    id smallserial not null,
-    name varchar(50) not null,
-    iso_code varchar(2) not null,
-    constraint d_country_pk primary key (id), 
-    constraint d_country_iso_unq unique (iso_code),
-    constraint d_country_name_unq unique (name),
-    constraint d_country_check_only_caps check (iso_code ~ '^[A-Z]{2}$')
-);
-
 create table if not exists dwh.d_city (
     id serial not null,
     name varchar(50) not null,
-    country_id smallint not null,
-    timezone varchar(20) not null,
+    timezone varchar(50) not null,
     constraint d_city_pk primary key (id), 
-    foreign key (country_id) references dwh.d_country (id),
     constraint d_city_name_uqn unique (name)
 );
 
