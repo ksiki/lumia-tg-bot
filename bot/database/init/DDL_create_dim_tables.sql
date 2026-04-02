@@ -39,7 +39,6 @@ create table if not exists dwh.d_user (
 	user_id bigint not null,
 	name varchar(50) not null,
 	sex varchar(7) not null,
-    has_active_subscription bool not null,
 	birthday_id integer not null, 
     birth_time time not null,
     birth_city_id integer not null,
@@ -58,12 +57,13 @@ create table if not exists dwh.d_user (
 
 create table if not exists dwh.d_product (
     id smallserial not null,
-    product_name varchar(100) not null, 
+    str_id varchar(100) not null, 
+    name varchar(100) not null,
     category varchar(50),               
     price_stars smallint not null,  
     is_discountable boolean default false,
     constraint d_product_pk primary key (id),
-    constraint d_product_product_name_unq unique (product_name),
+    constraint d_product_str_id_unq unique (str_id),
     constraint d_product_category_check check (category in ('microtransaction', 'subscription', 'free_service', 'subscription_service')),
     constraint d_product_price_stars_check check (price_stars >= 0)
 );

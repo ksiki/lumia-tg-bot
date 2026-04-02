@@ -43,3 +43,15 @@ create table if not exists dwh.f_user_action_log (
     foreign key (user_id) references dwh.d_user (id),
     foreign key (date_id) references dwh.d_calendar (id)
 );
+
+create table if not exists dwh.f_prediction (
+	id bigserial not null,
+	user_id bigint not null,
+	date_id integer not null,
+	type_id smallint not null,
+	prediction jsonb not null,
+	constraint f_horoscope_pk primary key (id),
+	foreign key (user_id) references dwh.d_user (id),
+	foreign key (date_id) references dwh.d_calendar (id),
+	foreign key (type_id) references dwh.d_product (id)
+);
