@@ -1,5 +1,5 @@
 import asyncio
-from create_bot import BOT, DISPATCHER
+from create_bot import BOT, DISPATCHER, DATABASE
 
 from scenarios.start.router import START_ROUTER
 from scenarios.admin.router import ADMIN_COMMAND_ROUTER
@@ -12,4 +12,7 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    finally:
+        asyncio.run(DATABASE.disconnect())
