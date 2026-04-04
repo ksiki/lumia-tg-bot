@@ -1,10 +1,8 @@
 from enum import Enum
 from lexicon.lexicon_logic import LexiconCore
-from common.inherit_doc_decorator import inherit_doc
 from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 
 
-@inherit_doc
 class Msg(LexiconCore, str, Enum):         
     __lexicon_data: dict[str, str] = MESSAGES
 
@@ -26,7 +24,6 @@ class Msg(LexiconCore, str, Enum):
     NOT_VALID_WHEN_YOUR_BIRTHDAY_QUESTION = "not_valid_when_your_birthday_question"
 
 
-@inherit_doc
 class Buttons(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = BUTTONS
 
@@ -38,6 +35,5 @@ class Buttons(LexiconCore, str, Enum):
     AGAIN = "again"
 
 
-@inherit_doc
 class Prompts(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = PROMPTS
