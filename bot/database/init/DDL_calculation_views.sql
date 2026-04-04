@@ -26,7 +26,8 @@ select
 from dwh.f_subscription fs
 join dwh.d_calendar sd on fs.start_date_id = sd.id
 join dwh.d_calendar ed on fs.end_date_id = ed.id
-where current_timestamp <= ed.date + '1 day'::interval;
+where now()::date <= ed.date + '1 day'::interval
+	and sd.date <= now()::date;
 
 create or replace view mart.v_product as
 select 
