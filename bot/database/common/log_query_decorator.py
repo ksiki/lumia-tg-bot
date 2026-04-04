@@ -8,8 +8,8 @@ from typing import Any, Callable, Final
 LOG: Final[Logger] = logging.getLogger(__name__)
 
 
-def log_query(logger: Logger = LOG):
-    def decorator(func: Callable):
+def log_query(logger: Logger = LOG) -> Callable:
+    def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
             start_time = 0
