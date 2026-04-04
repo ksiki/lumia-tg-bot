@@ -178,7 +178,8 @@ create or replace procedure api.add_transaction(
 	stars_price_original integer,
 	stars_price_actual integer,
 	token text,
-	is_subscription_active bool
+	is_subscription_active bool,
+	out transaction_id bigint
 )
 language plpgsql
 as $$
@@ -195,6 +196,7 @@ begin
 		or product_id is null
 		or date_id is null 
 	then
+		transaction_id := null;
 		return;
 	end if;
 	
@@ -217,7 +219,8 @@ begin
 		stars_price_actual,
 		token,
 		is_subscription_active
-	);
+	)
+	returning id into transaction_id;
 end;
 $$;
 
@@ -266,46 +269,7 @@ begin
 end;
 $$;
 
-create or replace procedure api.add_action_log(
-	user_id bigint,
-	message_text text,
-	response text,
-	date_log date,
-	time_log time
-)
-language plpgsql
-as $$
-declare
-	user_last_version_id bigint;
-	date_id integer;
-begin
-	user_last_version_id := api.get_last_user_version_id(user_id);
-	date_id := api.get_date_id(date_log);
-
-	if last_user_version_id is null 
-		or date_id is null
-	then
-		return;
-	end if;
-
-	insert into dwh.f_user_action_log (
-		user_id,
-		message_text,
-		response,
-		date_id,
-		time
-	)
-	values (
-		user_last_version_id,
-		message_text,
-		response,
-		date_id,
-		time_log
-	);
-end;
-$$;
-
-create or replace procedure api.add_action_log(
+create or replace procedure api.add_prediction(
 	user_id bigint,
 	date_prediction date,
 	type_str varchar(100),
@@ -340,6 +304,45 @@ begin
 		date_id,
 		type_id,
 		prediction
+	);
+end;
+$$;
+
+create or replace procedure api.add_action_log(
+	user_id bigint, 
+	message_text text, 
+	response text, 
+	date_log date, 
+	time_log time
+)
+language plpgsql
+as $$
+declare
+	user_last_version_id bigint;
+	date_id integer;
+begin
+	user_last_version_id := api.get_last_user_version_id(user_id);
+	date_id := api.get_date_id(date_log);
+
+	if last_user_version_id is null 
+		or date_id is null
+	then
+		return;
+	end if;
+
+	insert into dwh.f_user_action_log (
+		user_id,
+		message_text,
+		response,
+		date_id,
+		time
+	)
+	values (
+		user_last_version_id,
+		message_text,
+		response,
+		date_id,
+		time_log
 	);
 end;
 $$;
