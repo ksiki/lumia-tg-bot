@@ -19,15 +19,16 @@ where du.is_current;
 
 create or replace view mart.v_active_subscription as
 select 
-	fs.user_id as user_id,
+	du.user_id as user_id,
 	sd.date as start_date,
 	ed.date as end_date,
 	fs.created_at_time as created_at_time
 from dwh.f_subscription fs
+join dwh.d_user du on du.id = fs.user_id
 join dwh.d_calendar sd on fs.start_date_id = sd.id
 join dwh.d_calendar ed on fs.end_date_id = ed.id
-where now()::date <= ed.date + '1 day'::interval
-	and sd.date <= now()::date;
+where current_date <= ed.date
+	and sd.date <= current_date;
 
 create or replace view mart.v_product as
 select 

@@ -1,6 +1,13 @@
-from typing import Any, Awaitable, Callable
+import logging
+from logging import Logger
+from typing import Any, Awaitable, Callable, Final
 from aiogram import BaseMiddleware
 from aiogram.types import TelegramObject, Message
+
+from database.DTO import ActionLogDTO
+
+
+LOG: Final[Logger] = logging.getLogger(__name__)
 
 
 class ActionLoggingMiddleware(BaseMiddleware):
@@ -25,8 +32,18 @@ class ActionLoggingMiddleware(BaseMiddleware):
         elif isinstance(result, str):
             response_text = result
 
-        if user_id:
-            # запись в бд
-            pass
+        data_services = data.get("data_services")
+        if user_id and data_services:
+            try:
+                event_date = event.date
+                log = ActionLogDTO(user_id, 
+                                message_text,
+                                response_text,
+                                event_date.date(),
+                                event_date.time())
+                
+                await data_services.add_new_action_log(log)
+            except Exception as e:
+                LOG.error(f"Error in {__name__}: {e}")
 
         return result

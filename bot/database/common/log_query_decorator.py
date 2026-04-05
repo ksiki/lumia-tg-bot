@@ -2,14 +2,14 @@ import logging
 import functools
 import time
 from logging import Logger
-from typing import Any, Final, Collable
+from typing import Any, Callable, Final
 
 
 LOG: Final[Logger] = logging.getLogger(__name__)
 
 
-def log_query(logger: Logger = LOG):
-    def decorator(func: Collable):
+def log_query(logger: Logger = LOG) -> Callable:
+    def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
             start_time = 0

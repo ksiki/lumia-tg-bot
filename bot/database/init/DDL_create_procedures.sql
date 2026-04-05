@@ -1,104 +1,119 @@
 create or replace function api.get_last_user_version_id(
-	user_id bigint
+	p_user_id bigint
 )
 returns bigint
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	found_id bigint;
+	v_found_id bigint;
 begin
-	select id into found_id
+	select id into v_found_id
 	from dwh.d_user du
-	where du.user_id = user_id
+	where du.user_id = p_user_id
 		and is_current = true;
 
-	return found_id;
+	return v_found_id;
 end;
 $$;
 
 create or replace function api.get_product_id_by_str_id(
-	found_product_str_id varchar(100)
+	p_found_product_str_id varchar(100)
 )
 returns smallint
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	found_id smallint;
+	v_found_id smallint;
 begin
-	select id into found_id
+	select id into v_found_id
 	from dwh.d_product dp
-	where str_id = found_product_str_id;
+	where str_id = p_found_product_str_id;
 
-	return found_id;
+	return v_found_id;
 end;
 $$;
 
 create or replace function api.get_date_id(
-	target_date date
+	p_target_date date
 )
 returns integer
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	found_id integer;
+	v_found_id integer;
 begin
-	select id into found_id
+	select id into v_found_id
 	from dwh.d_calendar
-	where date = target_date;
+	where date = p_target_date;
 	
-	return coalesce(found_id, -1);
+	return coalesce(v_found_id, -1);
 end;
 $$;
 
 create or replace function api.get_or_create_city(
-	target_city varchar(50),
-	timezone varchar(50)
+	p_target_city varchar(50),
+	p_timezone varchar(50)
 )
 returns integer
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	found_id integer;
+	v_found_id integer;
 begin
-	select id into found_id
+	select id into v_found_id
 	from dwh.d_city
-	where name = target_city;
+	where name = p_target_city;
 	
-	if found_id is null then
+	if v_found_id is null then
 		insert into dwh.d_city (name, timezone)
-		values (target_city, timezone)
-		returning id into found_id;
+		values (p_target_city, p_timezone)
+		returning id into v_found_id;
 	end if;
 
-	return found_id;
+	return v_found_id;
 end;
 $$;
 
 create or replace procedure api.add_new_user(
-	user_id bigint,
-	name varchar(50),
-	sex varchar(7),
-	birthday date,
-	birth_time time,
-	birth_city varchar(50),
-	birthday_city_timezone varchar(50),
-	residence_city varchar(50),
-	residence_city_timezone varchar(50),
-	registration_date date
+	p_user_id bigint,
+	p_name varchar(50),
+	p_sex varchar(7),
+	p_birthday date,
+	p_birth_time time,
+	p_birth_city varchar(50),
+	p_birthday_city_timezone varchar(50),
+	p_residence_city varchar(50),
+	p_residence_city_timezone varchar(50),
+	p_registration_date date
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	birthday_id integer;
-	registration_date_id integer;
-	birth_city_id integer;
-	residence_city_id integer;
+	v_birthday_id integer;
+	v_registration_date_id integer;
+	v_birth_city_id integer;
+	v_residence_city_id integer;
 begin
-	birthday_id := api.get_date_id(birthday);
-	registration_date_id := api.get_date_id(registration_date);
+	if api.get_last_user_version_id(p_user_id) is not null
+	then
+		return;
+	end if;
 
-	birth_city_id := api.get_or_create_city(birth_city, birthday_city_timezone);
-	residence_city_id := api.get_or_create_city(residence_city, residence_city_timezone);
+	v_birthday_id := api.get_date_id(p_birthday);
+	v_registration_date_id := api.get_date_id(p_registration_date);
+
+	v_birth_city_id := api.get_or_create_city(p_birth_city, p_birthday_city_timezone);
+	v_residence_city_id := api.get_or_create_city(p_residence_city, p_residence_city_timezone);
 
 	insert into dwh.d_user (
 		user_id,
@@ -111,92 +126,96 @@ begin
 		registration_date_id
 	)
 	values (
-		user_id,
-		name,
-		sex,
-		birthday_id,
-		birth_time,
-		birth_city_id,
-		residence_city_id,
-		registration_date_id
+		p_user_id,
+		p_name,
+		p_sex,
+		v_birthday_id,
+		p_birth_time,
+		v_birth_city_id,
+		v_residence_city_id,
+		v_registration_date_id
 	);
 end;
 $$;
 
 create or replace procedure api.update_user_data(
-	user_id bigint,
-	name varchar(50),
-	sex varchar(7),
-	birthday date,
-	birth_time time,
-	birth_city varchar(50),
-	birthday_city_timezone varchar(50),
-	residence_city varchar(50),
-	residence_city_timezone varchar(50)
+	p_user_id bigint,
+	p_name varchar(50),
+	p_sex varchar(7),
+	p_birthday date,
+	p_birth_time time,
+	p_birth_city varchar(50),
+	p_birthday_city_timezone varchar(50),
+	p_residence_city varchar(50),
+	p_residence_city_timezone varchar(50)
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	version_id bigint;
-	registration_date date;
+	v_version_id bigint;
+	v_registration_date date;
 begin
-	select du.id, dc.date into version_id, registration_date
+	select du.id, dc.date into v_version_id, v_registration_date
 	from dwh.d_user du
 	join dwh.d_calendar dc on du.registration_date_id = dc.id
-	where du.user_id = user_id
+	where du.user_id = p_user_id
 		and is_current = true;
 
-	if version_id is null then
+	if v_version_id is null then
 		return;
 	end if;
 	
 	update dwh.d_user
 	set effective_to = now(), 
 		is_current = false
-	where id = version_id;
+	where id = v_version_id;
 
 	call api.add_new_user(
-		user_id,
-		name,
-		sex,
-		birthday,
-		birth_time,
-		birth_city,
-		birthday_city_timezone,
-		residence_city,
-		residence_city_timezone,
-		registration_date
+		p_user_id,
+		p_name,
+		p_sex,
+		p_birthday,
+		p_birth_time,
+		p_birth_city,
+		p_birthday_city_timezone,
+		p_residence_city,
+		p_residence_city_timezone,
+		v_registration_date
 	);
 end;
 $$;
 
 create or replace procedure api.add_transaction(
-	user_id bigint,
-	product_str_id varchar(100),
-	date_transaction date,
-	time_transaction time,
-	stars_price_original integer,
-	stars_price_actual integer,
-	token text,
-	is_subscription_active bool,
-	out transaction_id bigint
+	p_user_id bigint,
+	p_product_str_id varchar(100),
+	p_date_transaction date,
+	p_time_transaction time,
+	p_stars_price_original integer,
+	p_stars_price_actual integer,
+	p_token text,
+	p_is_subscription_active bool,
+	out out_transaction_id bigint
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	last_user_version_id bigint;
-	product_id smallint;	
-	date_id integer;
+	v_last_user_version_id bigint;
+	v_product_id smallint;	
+	v_date_id integer;
 begin
-	last_user_version_id := api.get_last_user_version_id(user_id);
-	product_id := api.get_product_id_by_str_id(product_str_id);	
-	date_id := api.get_date_id(date_transaction);
+	v_last_user_version_id := api.get_last_user_version_id(p_user_id);
+	v_product_id := api.get_product_id_by_str_id(p_product_str_id);	
+	v_date_id := api.get_date_id(p_date_transaction);
 
-	if last_user_version_id is null 
-		or product_id is null
-		or date_id is null 
+	if v_last_user_version_id is null 
+		or v_product_id is null
+		or v_date_id is null 
 	then
-		transaction_id := null;
+		out_transaction_id := null;
 		return;
 	end if;
 	
@@ -204,48 +223,50 @@ begin
 		user_id,
 		product_id,
 		date_id,
-		time_transaction,
+		time,
 		stars_price_original,
 		stars_price_actual,
 		token,
 		is_subscription_active
 	)
 	values (
-		last_user_version_id,
-		product_id,
-		date_id,
-		time_transaction,
-		stars_price_original,
-		stars_price_actual,
-		token,
-		is_subscription_active
+		v_last_user_version_id,
+		v_product_id,
+		v_date_id,
+		p_time_transaction,
+		p_stars_price_original,
+		p_stars_price_actual,
+		p_token,
+		p_is_subscription_active
 	)
-	returning id into transaction_id;
+	returning id into out_transaction_id;
 end;
 $$;
 
 create or replace procedure api.add_subscription(
-	user_id bigint,
-	transaction_id bigint,
-	start_date date,
-	end_date date,
-	created_at_time time,
-	status varchar(15)
+	p_user_id bigint,
+	p_transaction_id bigint,
+	p_start_date date,
+	p_end_date date,
+	p_created_at_time time,
+	p_status varchar(15)
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	user_last_version_id bigint;
-	start_date_id integer;
-	end_date_id integer;
+	v_user_last_version_id bigint;
+	v_start_date_id integer;
+	v_end_date_id integer;
 begin
-	user_last_version_id := api.get_last_user_version_id(user_id);
-	start_date_id := api.get_date_id(start_date);
-	end_date_id := api.get_date_id(end_date);
+	v_user_last_version_id := api.get_last_user_version_id(p_user_id);
+	v_start_date_id := api.get_date_id(p_start_date);
+	v_end_date_id := api.get_date_id(p_end_date);
 
-	if last_user_version_id is null 
-		or start_date_id is null
-		or end_date_id is null 
+	if v_user_last_version_id is null 
+		or v_start_date_id is null
+		or v_end_date_id is null 
 	then
 		return;
 	end if;
@@ -259,36 +280,38 @@ begin
 		status
 	)
 	values (
-		user_last_version_id,
-		transaction_id,
-		start_date_id,
-		end_date_id,
-		created_at_time,
-		status
+		v_user_last_version_id,
+		p_transaction_id,
+		v_start_date_id,
+		v_end_date_id,
+		p_created_at_time,
+		p_status
 	);
 end;
 $$;
 
 create or replace procedure api.add_prediction(
-	user_id bigint,
-	date_prediction date,
-	type_str varchar(100),
-	prediction jsonb
+	p_user_id bigint,
+	p_date_prediction date,
+	p_type_str varchar(100),
+	p_prediction jsonb
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	user_last_version_id bigint;
-	date_id integer;
-	type_id smallint;
+	v_user_last_version_id bigint;
+	v_date_id integer;
+	v_type_id smallint;
 begin
-	user_last_version_id := api.get_last_user_version_id(user_id);
-	date_id := api.get_date_id(date_prediction);
-	type_id := api.get_product_id_by_str_id(type_str);
+	v_user_last_version_id := api.get_last_user_version_id(p_user_id);
+	v_date_id := api.get_date_id(p_date_prediction);
+	v_type_id := api.get_product_id_by_str_id(p_type_str);
 
-	if last_user_version_id is null 
-		or date_id is null
-		or type_id is null
+	if v_user_last_version_id is null 
+		or v_date_id is null
+		or v_type_id is null
 	then
 		return;
 	end if;
@@ -300,32 +323,31 @@ begin
 		prediction
 	)
 	values (
-		user_last_version_id,
-		date_id,
-		type_id,
-		prediction
+		v_user_last_version_id,
+		v_date_id,
+		v_type_id,
+		p_prediction
 	);
 end;
 $$;
 
 create or replace procedure api.add_action_log(
-	user_id bigint, 
-	message_text text, 
-	response text, 
-	date_log date, 
-	time_log time
+	p_user_id bigint, 
+	p_message_text text, 
+	p_response text, 
+	p_date_log date, 
+	p_time_log time
 )
 language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
 as $$
 declare
-	user_last_version_id bigint;
-	date_id integer;
+	v_date_id integer;
 begin
-	user_last_version_id := api.get_last_user_version_id(user_id);
-	date_id := api.get_date_id(date_log);
+	v_date_id := api.get_date_id(p_date_log);
 
-	if last_user_version_id is null 
-		or date_id is null
+	if v_date_id is null
 	then
 		return;
 	end if;
@@ -338,11 +360,11 @@ begin
 		time
 	)
 	values (
-		user_last_version_id,
-		message_text,
-		response,
-		date_id,
-		time_log
+		p_user_id,
+		p_message_text,
+		p_response,
+		v_date_id,
+		p_time_log
 	);
 end;
 $$;

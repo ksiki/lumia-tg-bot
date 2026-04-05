@@ -41,7 +41,7 @@ class SubscriptionRepository(BaseRepository):
             select exists(
                 select 1
                 from mart.v_active_subscription vas
-                where user_id = $1
+                where vas.user_id = $1
             )
         """
 

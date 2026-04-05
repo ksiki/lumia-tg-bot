@@ -40,7 +40,6 @@ create table if not exists dwh.f_user_action_log (
 	date_id integer not null,
     time time not null default now()::time,
     constraint user_action_log_pk primary key (id),
-    foreign key (user_id) references dwh.d_user (id),
     foreign key (date_id) references dwh.d_calendar (id)
 );
 
