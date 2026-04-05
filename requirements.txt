@@ -3,7 +3,9 @@ aiogram
 python-decouple
 pandas
 pyyaml
-dadata
 redis
 pytest
 pytest-asyncio
+httpx 
+timezonefinder
+respx

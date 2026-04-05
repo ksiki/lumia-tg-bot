@@ -121,8 +121,6 @@ async def whats_your_residence_city(message: Message, state: FSMContext) -> Mess
                                   Msg.NOT_VALID_YOUR_CITY_QUESTION.text)
 
     await state.update_data(birth_city=city_data.get("city"),
-                            birth_country=city_data.get("country"),
-                            birth_iso_code=city_data.get("iso_code"),
                             birth_timezone=city_data.get("timezone"))
     LOG.info("Question: Whats your residence city")
     return await send_message(message,
@@ -140,8 +138,6 @@ async def successful_registration(message: Message, state: FSMContext) -> Messag
                                   Msg.NOT_VALID_YOUR_CITY_QUESTION.text)
     
     await state.update_data(residence_city=city_data.get("city"),
-                            residence_country=city_data.get("country"),
-                            residence_iso_code=city_data.get("iso_code"),
                             residence_timezone=city_data.get("timezone"))
 
     user_data = await state.get_data()
@@ -164,8 +160,8 @@ async def successful_registration(message: Message, state: FSMContext) -> Messag
 
 @START_ROUTER.message(F.text == Buttons.FORTH.text, States.PREMIUM_GIFT_FIVE_DAYS)
 async def activate_gift(message: Message, state: FSMContext) -> Message:
-    await state.clear()
     user_data = await state.get_data()
+    await state.clear()
     
     LOG.info("Gift: Dree premium for 3 days")
     return await send_message(message,
