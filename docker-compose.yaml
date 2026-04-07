@@ -8,17 +8,17 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - "D:/docker/volumes/postgres:/var/lib/postgresql"
-      - "./bot/database/init/DDL_create_dwh_schema.sql:/docker-entrypoint-initdb.d/01_create_dwh_schema.sql"
-      - "./bot/database/init/DDL_create_dim_tables.sql:/docker-entrypoint-initdb.d/02_create_dim_tables.sql"
-      - "./bot/database/init/DML_load_dimensions.sql:/docker-entrypoint-initdb.d/03_load_dimensions.sql"
-      - "./bot/database/init/DDL_create_fact_tables.sql:/docker-entrypoint-initdb.d/04_create_fact_tables.sql"
-      - "./bot/database/init/DDL_create_indexes.sql:/docker-entrypoint-initdb.d/05_create_indexes.sql"
-      - "./bot/database/init/DDL_create_mart_schema.sql:/docker-entrypoint-initdb.d/06_create_mart_schema.sql"
-      - "./bot/database/init/DDL_calculation_views.sql:/docker-entrypoint-initdb.d/07_calculation_views.sql"
-      - "./bot/database/init/DDL_create_API_schema.sql:/docker-entrypoint-initdb.d/08_create_API_schema.sql"
-      - "./bot/database/init/DDL_create_procedures.sql:/docker-entrypoint-initdb.d/09_create_procedures.sql"
-      - "./bot/database/init/DCL_grant_permissions.sh:/docker-entrypoint-initdb.d/10_grant_permissions.sh"
+      - "./postgres_data:/var/lib/postgresql:Z"
+      - "./bot/database/init/DDL_create_dwh_schema.sql:/docker-entrypoint-initdb.d/01_create_dwh_schema.sql:Z"
+      - "./bot/database/init/DDL_create_dim_tables.sql:/docker-entrypoint-initdb.d/02_create_dim_tables.sql:Z"
+      - "./bot/database/init/DML_load_dimensions.sql:/docker-entrypoint-initdb.d/03_load_dimensions.sql:Z"
+      - "./bot/database/init/DDL_create_fact_tables.sql:/docker-entrypoint-initdb.d/04_create_fact_tables.sql:Z"
+      - "./bot/database/init/DDL_create_indexes.sql:/docker-entrypoint-initdb.d/05_create_indexes.sql:Z"
+      - "./bot/database/init/DDL_create_mart_schema.sql:/docker-entrypoint-initdb.d/06_create_mart_schema.sql:Z"
+      - "./bot/database/init/DDL_calculation_views.sql:/docker-entrypoint-initdb.d/07_calculation_views.sql:Z"
+      - "./bot/database/init/DDL_create_API_schema.sql:/docker-entrypoint-initdb.d/08_create_API_schema.sql:Z"
+      - "./bot/database/init/DDL_create_procedures.sql:/docker-entrypoint-initdb.d/09_create_procedures.sql:Z"
+      - "./bot/database/init/DCL_grant_permissions.sh:/docker-entrypoint-initdb.d/10_grant_permissions.sh:Z"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -47,5 +47,5 @@ services:
       redis:
         condition: service_started
     volumes:
-      - .:/app
+      - ".:/app:Z"
     command: python bot/aiogram_run.py
