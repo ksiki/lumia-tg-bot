@@ -2,8 +2,7 @@ import asyncio
 from typing import Final
 from create_bot import BOT, DISPATCHER, DATABASE
 
-from scenarios.start.router import START_ROUTER
-from scenarios.admin.router import ADMIN_COMMAND_ROUTER
+from scenarios import START_ROUTER, MENU_ROUTER
 from database.data_services import DataServices
 from database.repositories import UserRepository, TransactionRepository, SubscriptionRepository, ActionLogRepository, PredictionRepository, ProductsRepository
 
@@ -17,7 +16,7 @@ async def main() -> None:
                                                  prediction_rep=PredictionRepository(DATABASE.pool),
                                                  products_rep=ProductsRepository(DATABASE.pool))
 
-    DISPATCHER.include_routers(START_ROUTER, ADMIN_COMMAND_ROUTER)
+    DISPATCHER.include_routers(START_ROUTER, MENU_ROUTER)
     await BOT.delete_webhook(drop_pending_updates=True)
     await DISPATCHER.start_polling(BOT, data_services=DATA_SERVICES)
     await DATABASE.disconnect()

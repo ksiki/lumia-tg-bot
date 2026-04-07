@@ -4,3 +4,7 @@ man: Парень
 forth: Далее!
 activate: Активировать 🔥
 again: Заново
+product_batton_with_price: |
+  {text} {price} ⭐️
+product_batton_without_price: |
+  {text} 

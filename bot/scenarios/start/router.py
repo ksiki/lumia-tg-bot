@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from logging import Logger
 from typing import Final
@@ -5,14 +6,17 @@ from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
-from aiogram.types import ReplyKeyboardMarkup
 
-from lexicon.vocabulary import Buttons
-from lexicon.vocabulary import Msg
+from database.DTO import UserDTO
+from database.data_services import DataServices
+from lexicon.vocabulary import Buttons, Msg
 from middleware.action_logging_middleware import ActionLoggingMiddleware
 from middleware.text_message import TypingActionMiddleware
+from scenarios.fsm_states import States
 from utils.validator import is_valid_date, is_valid_time, is_valid_city
-from scenarios.start.fsm_states import States
+from utils.converter import str_to_date, str_to_time
+from scenarios.message_sendler import send_message
+from scenarios.menu.router import menu
 from scenarios.start.keyboard import BEGIN_SURVEY, SEX_QUESTION, CONFIRMATION_REGISTRATION, ACTIVATING_GIFT
 
 
@@ -22,20 +26,17 @@ START_ROUTER.message.middleware(TypingActionMiddleware())
 LOG: Final[Logger] = logging.getLogger(__name__)
 
 
-async def send_message(message: Message, mes_text: str, state: FSMContext = None, newState: States = None, reply_markup: ReplyKeyboardMarkup = None) -> Message:
-    response = await message.answer(mes_text,
-                                    reply_markup=reply_markup)
-
-    if state and newState:
-        await state.set_state(newState)
-
-    return response
-
-
 @START_ROUTER.message(CommandStart())
-async def start(message: Message, state: FSMContext) -> Message:
+async def start(message: Message, state: FSMContext, data_services: DataServices) -> Message | None:
     await state.clear()
-
+    
+    is_register = await data_services.is_user_registered(message.from_user.id)
+    if is_register:
+        LOG.info("Open main menu")
+        await state.set_state(States.MENU)
+        await menu(message, state, data_services)
+        return
+    
     LOG.info("Command /start: Start message")
     return await send_message(message,
                               Msg.START_MESSAGE.format(username=message.from_user.username),
@@ -130,25 +131,36 @@ async def whats_your_residence_city(message: Message, state: FSMContext) -> Mess
 
 
 @START_ROUTER.message(F.text, States.SUCCESSFUL_ACQUAINTANCE)
-async def successful_registration(message: Message, state: FSMContext) -> Message:
+async def successful_registration(message: Message, state: FSMContext, data_services: DataServices) -> Message:
     city_data: dict[str, str] | None = await is_valid_city(message.text)
     if not city_data:
         LOG.info("Attention: Not valid residence city")
         return await send_message(message,
                                   Msg.NOT_VALID_YOUR_CITY_QUESTION.text)
-    
-    await state.update_data(residence_city=city_data.get("city"),
-                            residence_timezone=city_data.get("timezone"))
 
     user_data = await state.get_data()
+    user_dto = UserDTO(message.from_user.id,
+                       user_data.get("name"),
+                       user_data.get("sex"),
+                       str_to_date(user_data.get("birthday")),
+                       str_to_time(user_data.get("birth_time")),
+                       user_data.get("birth_city"),
+                       user_data.get("birth_timezone"),
+                       city_data.get("city"),
+                       city_data.get("timezone"),
+                       datetime.now().date())
+    try:
+        await data_services.register_user(user_dto)
+    except Exception as e:
+        LOG.error(f"Error in {__name__}: {e}")
+
     answer_message = Msg.SUCCESSFUL_REGISTRATION.format(
-        name=user_data.get("name"),
-        sex=user_data.get("sex"),
-        birthday=user_data.get("birthday"),
-        birth_time=user_data.get("birth_time"),
-        birth_city=user_data.get("birth_city"),
-        residence_city=user_data.get("residence_city")
-    )
+        name=user_dto.name,
+        sex=user_dto.sex,
+        birthday=user_dto.birthday,
+        birth_time=user_dto.birth_time,
+        birth_city=user_dto.birth_city,
+        residence_city=user_dto.residence_city)
 
     LOG.info("Message: Confirmation registration")
     return await send_message(message,
@@ -160,9 +172,9 @@ async def successful_registration(message: Message, state: FSMContext) -> Messag
 
 @START_ROUTER.message(F.text == Buttons.FORTH.text, States.PREMIUM_GIFT_FIVE_DAYS)
 async def activate_gift(message: Message, state: FSMContext) -> Message:
-    user_data = await state.get_data()
     await state.clear()
-    
+    await state.set_state(States.MENU)
+
     LOG.info("Gift: Dree premium for 3 days")
     return await send_message(message,
                               Msg.PREMIUM_GIFT_FIVE_DAYS.text,

@@ -48,6 +48,10 @@ class DataServices:
     async def get_product(self, str_id: str) -> Record | None:
         response = await self.__products_rep.get_product(str_id)
         return response
+    
+    async def get_all_product(self) -> list[Record] | None:
+        response = await self.__products_rep.get_all_product()
+        return response
 
     async def get_prediction(self, found_prediction: GetPredictionDTO) -> Record | None:
         response = await self.__prediction_rep.get_prediction(found_prediction)

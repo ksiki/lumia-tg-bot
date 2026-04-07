@@ -20,10 +20,16 @@ class UserRepository(BaseRepository):
         return data
 
     async def exists(self, user_id: int) -> bool:
-        query = "select api.get_last_user_version_id($1)"
+        query = """
+            select exists(
+                select 1
+                from mart.v_user_current vuc
+                where vuc.user_id = $1
+            )
+        """
 
         result = await self._pool.fetchval(query, user_id)
-        return result is not None
+        return bool(result)
 
     async def add_new_user(self, user: UserDTO) -> None:
         query = "call api.add_new_user($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"

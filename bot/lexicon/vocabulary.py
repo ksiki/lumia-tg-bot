@@ -6,7 +6,7 @@ from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 class Msg(LexiconCore, str, Enum):         
     __lexicon_data: dict[str, str] = MESSAGES
 
-    LOBBY_MESSAGE = "lobby_message"
+    MENU_MESSAGE = "menu_message"
 
     # start dialogue
     START_MESSAGE = "start_message"
@@ -33,6 +33,8 @@ class Buttons(LexiconCore, str, Enum):
     FORTH = "forth"
     ACTIVATE = "activate"
     AGAIN = "again"
+    PRODUCT_BATTON_WITH_PRICE = "product_batton_with_price"
+    PRODUCT_BATTON_WITHOUT_PRICE = "product_batton_without_price"
 
 
 class Prompts(LexiconCore, str, Enum):

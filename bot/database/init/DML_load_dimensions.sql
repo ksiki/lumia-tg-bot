@@ -25,15 +25,15 @@ on conflict (id) do nothing;
 
 insert into dwh.d_product (str_id, name, category, price_stars, is_discountable)
 values 
-	('monthly_subscription', 'Подписка Premiuum на месяц', 'subscription', 150, false),
+	('monthly_subscription', 'Premiuum на месяц', 'subscription', 150, false),
 	('short_horoscope_for_the_day', 'Гороскоп на день', 'free_service', 0, false),
 	('one_card_of_the_day', 'Катра дня', 'free_service', 0, false),
 	('full_horoscope_for_the_day', 'Гороскоп на день', 'subscription_service', 0, false),
 	('three_tarot_cards_for_the_day', 'Три карты дня', 'subscription_service', 0, false),
 	('lunar_horoscope_for_the_week', 'Лунный гороскоп на неделю', 'subscription_service', 0, false),
-	('one_time_deep_seven_card_hand', 'Глубокий расклад на конкретную ситуации (7 карт)', 'microtransaction', 150, true),
-	('fate_matrix', 'Расчет «Матрицы судьбы»', 'microtransaction', 150, true),
-	('human_design', 'Расчет «Дизайна человека»', 'microtransaction', 150, true),
-	('deep_compatibility_analysis_synastry', 'Глубокий разбор совместимости (Синастрия)', 'microtransaction', 150, true),
+	('one_time_deep_seven_card_hand', 'Глубокий расклад на ситуации (7 карт)', 'microtransaction', 150, true),
+	('fate_matrix', '«Матрица судьбы»', 'microtransaction', 150, true),
+	('human_design', '«Дизайн человека»', 'microtransaction', 150, true),
+	('deep_compatibility_analysis_synastry', 'Глубокий разбор совместимости', 'microtransaction', 150, true),
 	('test_of_loyalty', 'Проверка на верность', 'microtransaction', 150, true)
 on conflict (str_id) do nothing;
