@@ -18,6 +18,37 @@ begin
 end;
 $$;
 
+create or replace function api.get_last_subscription(
+	p_user_id bigint
+)
+returns table (
+    transaction_id bigint,
+    start_date date,
+    end_date date,
+    created_at_time time,
+    status varchar(15)
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+	return query
+	select 
+		transaction_id,
+		sd.date,
+		ed.date,
+		created_at_time,
+		status
+    from dwh.f_subscription fs
+	join dwh.d_calendar sd on fs.start_date_id = sd.id
+	join dwh.d_calendar ed on fs.end_date_id = ed.id
+    where fs.user_id = p_user_id
+	order by sd.date desc, created_at_time desc
+    limit 1;
+end;
+$$;
+
 create or replace function api.get_product_id_by_str_id(
 	p_found_product_str_id varchar(100)
 )
@@ -293,7 +324,7 @@ $$;
 create or replace procedure api.add_prediction(
 	p_user_id bigint,
 	p_date_prediction date,
-	p_type_str varchar(100),
+	p_type_id smallint,
 	p_prediction jsonb
 )
 language plpgsql
@@ -303,15 +334,12 @@ as $$
 declare
 	v_user_last_version_id bigint;
 	v_date_id integer;
-	v_type_id smallint;
 begin
 	v_user_last_version_id := api.get_last_user_version_id(p_user_id);
 	v_date_id := api.get_date_id(p_date_prediction);
-	v_type_id := api.get_product_id_by_str_id(p_type_str);
 
 	if v_user_last_version_id is null 
 		or v_date_id is null
-		or v_type_id is null
 	then
 		return;
 	end if;
@@ -325,7 +353,7 @@ begin
 	values (
 		v_user_last_version_id,
 		v_date_id,
-		v_type_id,
+		p_type_id,
 		p_prediction
 	);
 end;

@@ -13,7 +13,7 @@ class UserRepository(BaseRepository):
             select
                 *
             from mart.v_user_current vuc
-            where vuc.user_id = $1
+            where vuc.user_id = $1::bigint
         """
 
         data = await self._pool.fetchrow(query, user_id)

@@ -47,6 +47,7 @@ create table if not exists dwh.d_product (
     id smallserial not null,
     str_id varchar(100) not null, 
     name varchar(100) not null,
+    description varchar(200) not null,
     category varchar(50),               
     price_stars smallint not null,  
     is_discountable boolean default false,

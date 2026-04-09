@@ -34,6 +34,7 @@ create or replace view mart.v_product as
 select 
 	str_id, 
 	name,
+	description,
 	category,
 	price_stars,
 	is_discountable
@@ -51,3 +52,8 @@ from dwh.f_prediction fp
 join dwh.d_user du on du.id = fp.user_id
 join dwh.d_calendar dc on dc.id = fp.date_id
 join dwh.d_product dp on dp.id = fp.type_id;
+
+create or replace view mart.v_calendar as
+select 
+	*
+from dwh.d_calendar;

@@ -1,4 +1,5 @@
 from enum import Enum
+from tkinter.messagebox import CANCEL
 from lexicon.lexicon_logic import LexiconCore
 from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 
@@ -35,7 +36,22 @@ class Buttons(LexiconCore, str, Enum):
     AGAIN = "again"
     PRODUCT_BATTON_WITH_PRICE = "product_batton_with_price"
     PRODUCT_BATTON_WITHOUT_PRICE = "product_batton_without_price"
+    PAY = "pay"
+    CANCEL = "cancel"
 
 
 class Prompts(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = PROMPTS
+
+    ROLE = "role"
+    LUNAR_HOROSCOPE_ON_THE_WEEK = "lunar_horoscope_on_the_week"
+    TARO_ONE_CARD = "taro_one_card"
+    TARO_THREE_CARDS = "taro_three_cards"
+    DEEP_UNDERSTANDING_OF_THE_SITUATION = "deep_understanding_of_the_situation"
+    MATRIX_OF_DESTINY = "matrix_of_destiny"
+    HUMAN_DESIGN = "human_design"
+    COMPATIBILITY_CHART = "compatibility_chart"
+    TEST_OF_LOYALTY = "test_of_loyalty" 
+    FREE_HOROSCOPE = "free_horoscope"
+    PREMIUM_HOROSCOPE = "premium_horoscope"
+    

@@ -1,3 +1,4 @@
+import json
 from asyncpg import Pool, Record
 
 from database.DTO.prediction_dto import PredictionDTO
@@ -17,7 +18,7 @@ class PredictionRepository(BaseRepository):
             prediction.user_id, 
             prediction.prediction_date, 
             prediction.type, 
-            prediction.prediction
+            json.dumps(prediction.prediction, ensure_ascii=False)
         )
 
     async def get_prediction(self, found_prediction: GetPredictionDTO) -> Record | None:

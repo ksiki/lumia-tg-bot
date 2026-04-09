@@ -8,3 +8,5 @@ product_batton_with_price: |
   {text} {price} ⭐️
 product_batton_without_price: |
   {text} 
+pay: Pay ⭐️
+cancel: Cancellation ❌
