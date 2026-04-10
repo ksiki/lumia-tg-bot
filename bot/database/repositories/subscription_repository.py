@@ -24,7 +24,7 @@ class SubscriptionRepository(BaseRepository):
     async def get_active_subscription(self, user_id: int) -> Record | None:
         query = """ 
             select *
-            from mart.v_active_subscription vas
+            from api.v_active_subscription vas
             where user_id = $1
             limit 1
         """
@@ -48,7 +48,7 @@ class SubscriptionRepository(BaseRepository):
         query = """ 
             select exists(
                 select 1
-                from mart.v_active_subscription vas
+                from api.v_active_subscription vas
                 where vas.user_id = $1
             )
         """

@@ -12,7 +12,7 @@ class UserRepository(BaseRepository):
         query = """
             select
                 *
-            from mart.v_user_current vuc
+            from api.v_user_current vuc
             where vuc.user_id = $1::bigint
         """
 
@@ -23,7 +23,7 @@ class UserRepository(BaseRepository):
         query = """
             select exists(
                 select 1
-                from mart.v_user_current vuc
+                from api.v_user_current vuc
                 where vuc.user_id = $1
             )
         """

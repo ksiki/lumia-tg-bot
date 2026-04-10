@@ -24,7 +24,7 @@ class PredictionRepository(BaseRepository):
     async def get_prediction(self, found_prediction: GetPredictionDTO) -> Record | None:
         query = """
             select *
-            from mart.v_prediction vp
+            from api.v_prediction vp
             where user_id = $1
                 and date = $2
                 and type = $3 

@@ -1,4 +1,4 @@
-create or replace view mart.v_user_current as
+create or replace view api.v_user_current as
 select 
 	du.user_id as user_id,
 	du.id as version_id,
@@ -17,7 +17,7 @@ join dwh.d_city bc on du.birth_city_id = bc.id
 join dwh.d_city rc on du.residence_city_id = rc.id
 where du.is_current;
 
-create or replace view mart.v_active_subscription as
+create or replace view api.v_active_subscription as
 select 
 	du.user_id as user_id,
 	sd.date as start_date,
@@ -30,17 +30,7 @@ join dwh.d_calendar ed on fs.end_date_id = ed.id
 where current_date <= ed.date
 	and sd.date <= current_date;
 
-create or replace view mart.v_product as
-select 
-	str_id, 
-	name,
-	description,
-	category,
-	price_stars,
-	is_discountable
-from dwh.d_product;
-
-create or replace view mart.v_prediction as
+create or replace view api.v_prediction as
 select 
 	du.user_id as user_id,
 	du.id as user_version_id,
@@ -52,8 +42,3 @@ from dwh.f_prediction fp
 join dwh.d_user du on du.id = fp.user_id
 join dwh.d_calendar dc on dc.id = fp.date_id
 join dwh.d_product dp on dp.id = fp.type_id;
-
-create or replace view mart.v_calendar as
-select 
-	*
-from dwh.d_calendar;

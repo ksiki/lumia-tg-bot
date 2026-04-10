@@ -29,7 +29,7 @@ async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboa
 
         
         if price > 0: 
-            display_price = price * SUBSCRIBE_DISCOUNT if is_subscribed else price
+            display_price = int(price * SUBSCRIBE_DISCOUNT) if is_subscribed else price
             button_text = Buttons.PRODUCT_BATTON_WITH_PRICE.text.format(text=p["name"], price=display_price)
         else:
             button_text = Buttons.PRODUCT_BATTON_WITHOUT_PRICE.text.format(text=p["name"])

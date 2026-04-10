@@ -10,7 +10,7 @@ class ProductsRepository(BaseRepository):
     async def get_product(self, str_id: str) -> Record | None:
         query = """
             select *
-            from mart.v_product vp
+            from dwh.d_product
             where str_id = $1
         """
 
@@ -24,7 +24,7 @@ class ProductsRepository(BaseRepository):
         return id
     
     async def get_all_product(self) -> list[Record] | None:
-        query = "select * from mart.v_product vp"
+        query = "select * from dwh.d_product"
 
         products = await self._pool.fetch(query)
         return products

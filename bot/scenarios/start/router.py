@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from logging import Logger
 from typing import Final
@@ -7,6 +7,7 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
+from database.DTO import SubscriptionDTO
 from database.DTO import UserDTO
 from database.data_services import DataServices
 from lexicon.vocabulary import Buttons, Msg
@@ -154,28 +155,30 @@ async def successful_registration(message: Message, state: FSMContext, data_serv
     except Exception as e:
         LOG.error(f"Error in {__name__}: {e}")
 
-    answer_message = Msg.SUCCESSFUL_REGISTRATION.format(
-        name=user_dto.name,
-        sex=user_dto.sex,
-        birthday=user_dto.birthday,
-        birth_time=user_dto.birth_time,
-        birth_city=user_dto.birth_city,
-        residence_city=user_dto.residence_city)
-
     LOG.info("Message: Confirmation registration")
     return await send_message(message,
-                              answer_message,
+                              Msg.SUCCESSFUL_REGISTRATION.text,
                               state,
                               States.PREMIUM_GIFT_FIVE_DAYS,
                               CONFIRMATION_REGISTRATION)
 
 
 @START_ROUTER.message(F.text == Buttons.FORTH.text, States.PREMIUM_GIFT_FIVE_DAYS)
-async def activate_gift(message: Message, state: FSMContext) -> Message:
+async def activate_gift(message: Message, state: FSMContext, data_services: DataServices) -> Message:
     await state.clear()
     await state.set_state(States.MENU)
 
-    LOG.info("Gift: Dree premium for 3 days")
+    sub_dto = SubscriptionDTO(
+        message.from_user.id,
+        None,
+        datetime.now().date(),
+        datetime.now().date() + timedelta(3),
+        datetime.now().time(),
+        "trial"
+    )
+    await data_services.add_new_subscription(sub_dto)
+
+    LOG.info("Gift: Gift premium for 3 days")
     return await send_message(message,
                               Msg.PREMIUM_GIFT_FIVE_DAYS.text,
                               reply_markup=ACTIVATING_GIFT)
