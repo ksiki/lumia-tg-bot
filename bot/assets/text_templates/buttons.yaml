@@ -8,3 +8,6 @@ product_batton_with_price: |
   {text} {price} ⭐️
 product_batton_without_price: |
   {text} 
+pay: Оплатить ⭐️
+cancel: Отмена  ❌
+open_menu: Перейти в меню

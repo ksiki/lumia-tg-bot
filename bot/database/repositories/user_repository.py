@@ -9,24 +9,13 @@ class UserRepository(BaseRepository):
         super().__init__(pool)
 
     async def get_actual_data(self, user_id: int) -> Record | None:
-        query = """
-            select
-                *
-            from mart.v_user_current vuc
-            where vuc.user_id = $1
-        """
+        query = "select * from api.get_user_actual_data($1)"
 
         data = await self._pool.fetchrow(query, user_id)
         return data
 
     async def exists(self, user_id: int) -> bool:
-        query = """
-            select exists(
-                select 1
-                from mart.v_user_current vuc
-                where vuc.user_id = $1
-            )
-        """
+        query = "select exists(select 1 from api.get_user_actual_data($1))"
 
         result = await self._pool.fetchval(query, user_id)
         return bool(result)

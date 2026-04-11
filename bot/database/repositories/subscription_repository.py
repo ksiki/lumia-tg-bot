@@ -21,14 +21,21 @@ class SubscriptionRepository(BaseRepository):
             subscription.status
         )
 
-    async def get_subscription(self, user_id: int) -> Record | None:
+    async def get_active_subscription(self, user_id: int) -> Record | None:
         query = """ 
             select *
-            from mart.v_active_subscription vas
-            where user_id = $1
-            order by created_at_time desc
+            from api.get_active_subscriptions($1)
             limit 1
         """
+
+        subscription = await self._pool.fetchrow(
+            query,
+            user_id
+        )
+        return subscription
+
+    async def get_last_subscription(self, user_id: int) -> Record | None:
+        query = "select * from api.get_last_subscription($1)"
 
         subscription = await self._pool.fetchrow(
             query,
@@ -40,8 +47,7 @@ class SubscriptionRepository(BaseRepository):
         query = """ 
             select exists(
                 select 1
-                from mart.v_active_subscription vas
-                where vas.user_id = $1
+                from api.get_active_subscriptions($1)
             )
         """
 

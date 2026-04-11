@@ -5,7 +5,7 @@ from datetime import date, time
 @dataclass(frozen=True)
 class SubscriptionDTO:
 	user_id: int
-	transaction_id: int
+	transaction_id: int | None
 	start_date: date
 	end_date: date
 	created_at_time: time
