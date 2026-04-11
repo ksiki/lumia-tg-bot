@@ -18,37 +18,6 @@ begin
 end;
 $$;
 
-create or replace function api.get_last_subscription(
-	p_user_id bigint
-)
-returns table (
-    transaction_id bigint,
-    start_date date,
-    end_date date,
-    created_at_time time,
-    status varchar(15)
-)
-language plpgsql
-security definer 
-set search_path = api, dwh, pg_temp
-as $$
-begin
-	return query
-	select 
-		transaction_id,
-		sd.date,
-		ed.date,
-		created_at_time,
-		status
-    from dwh.f_subscription fs
-	join dwh.d_calendar sd on fs.start_date_id = sd.id
-	join dwh.d_calendar ed on fs.end_date_id = ed.id
-    where fs.user_id = p_user_id
-	order by sd.date desc, created_at_time desc
-    limit 1;
-end;
-$$;
-
 create or replace function api.get_product_id_by_str_id(
 	p_found_product_str_id varchar(100)
 )
@@ -110,6 +79,278 @@ begin
 	end if;
 
 	return v_found_id;
+end;
+$$;
+
+create or replace function api.get_user_actual_data(
+    p_user_id bigint
+)
+returns table (
+    user_id bigint,
+    version_id bigint,
+    name varchar(50),
+    sex varchar(7),
+    birthday date,
+    birth_time time,
+    birth_city varchar(50),
+    residence_city varchar(50),
+    timezone varchar(50),
+    registration_date date
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select 
+        du.user_id,
+        du.id as version_id,
+        du.name,
+        du.sex,
+        bd.date as birthday,
+        du.birth_time,
+        bc.name as birth_city,
+        rc.name as residence_city,
+        rc.timezone,
+        rd.date as registration_date
+    from dwh.d_user du
+    join dwh.d_calendar bd on du.birthday_id = bd.id
+    join dwh.d_calendar rd on du.registration_date_id = rd.id
+    join dwh.d_city bc on du.birth_city_id = bc.id
+    join dwh.d_city rc on du.residence_city_id = rc.id
+    where du.user_id = p_user_id and du.is_current;
+end;
+$$;
+
+create or replace function api.get_active_subscriptions(
+    p_user_id bigint
+)
+returns table (
+    user_id bigint,
+    start_date date,
+    end_date date,
+    created_at_time time
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select 
+        du.user_id,
+        sd.date as start_date,
+        ed.date as end_date,
+        fs.created_at_time
+    from dwh.f_subscription fs
+    join dwh.d_user du on du.id = fs.user_id
+    join dwh.d_calendar sd on fs.start_date_id = sd.id
+    join dwh.d_calendar ed on fs.end_date_id = ed.id
+    where du.user_id = p_user_id
+        and current_date <= ed.date
+        and sd.date <= current_date;
+end;
+$$;
+
+create or replace function api.get_predictions_by_params(
+    p_user_id bigint,
+    p_date date,
+    p_type_str_id varchar(100)
+)
+returns table (
+    id bigint,
+    user_id bigint,
+    user_version_id bigint,
+    date date,
+    week_of_year smallint,
+    type varchar(100),
+    prediction jsonb,
+    success bool,
+    cards text,
+    with_pdf bool
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select 
+        fp.id,
+        du.user_id,
+        du.id as user_version_id,
+        dc.date,
+        dc.week_of_year,
+        dp.str_id as type,
+        fp.prediction,
+        fp.success,
+        fp.cards,
+        fp.with_pdf
+    from dwh.f_prediction fp
+    join dwh.d_user du on du.id = fp.user_id
+    join dwh.d_calendar dc on dc.id = fp.date_id
+    join dwh.d_product dp on dp.id = fp.type_id
+    where du.user_id = p_user_id 
+        and dc.date = p_date 
+        and dp.str_id = p_type_str_id;
+end;
+$$;
+
+create or replace function api.get_prediction_by_id(
+    p_prediction_id bigint
+)
+returns table (
+    id bigint,
+    user_id bigint,
+    user_version_id bigint,
+    date date,
+    week_of_year smallint,
+    type varchar(100),
+    prediction jsonb,
+    success bool,
+    cards text,
+    with_pdf bool
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select 
+        fp.id,
+        du.user_id,
+        du.id as user_version_id,
+        dc.date,
+        dc.week_of_year,
+        dp.str_id as type,
+        fp.prediction,
+        fp.success,
+        fp.cards,
+        fp.with_pdf
+    from dwh.f_prediction fp
+    join dwh.d_user du on du.id = fp.user_id
+    join dwh.d_calendar dc on dc.id = fp.date_id
+    join dwh.d_product dp on dp.id = fp.type_id
+    where fp.id = p_prediction_id;
+end;
+$$;
+
+create or replace function api.get_last_subscription(
+	p_user_id bigint
+)
+returns table (
+    transaction_id bigint,
+    start_date date,
+    end_date date,
+    created_at_time time,
+    status varchar(15)
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+	return query
+	select 
+		fs.transaction_id,
+		sd.date,
+		ed.date,
+		fs.created_at_time,
+		fs.status
+    from dwh.f_subscription fs
+    join dwh.d_user du on fs.user_id = du.id
+	join dwh.d_calendar sd on fs.start_date_id = sd.id
+	join dwh.d_calendar ed on fs.end_date_id = ed.id
+    where du.user_id = p_user_id
+	order by sd.date desc, fs.created_at_time desc
+    limit 1;
+end;
+$$;
+
+create or replace function api.get_transaction(
+	p_transaction_id bigint
+)
+returns table (
+    user_id bigint,
+    product_id smallint,  
+	product_str_id varchar(100),
+    date_transaction date,        
+    time_transaction time,
+    stars_price_original integer,
+    stars_price_actual integer,
+    token text,
+    is_subscription_active boolean,
+	status varchar(6)
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+	return query
+	select 
+		du.user_id,
+		ft.product_id,
+		dp.str_id,
+		dc.date,
+		ft.time,
+		ft.stars_price_original,
+		ft.stars_price_actual,
+		ft.token,
+		ft.is_subscription_active,
+		ft.status
+    from dwh.f_transaction ft
+    join dwh.d_user du on ft.user_id = du.id
+	left join dwh.d_product dp on ft.product_id = dp.id
+	left join dwh.d_calendar dc on ft.date_id = dc.id
+    where ft.id = p_transaction_id;
+end;
+$$;
+
+create or replace function api.get_product_by_str_id(
+    p_str_id varchar(100)
+)
+returns table (
+    id smallint,
+    str_id varchar(100),
+    name varchar(100),
+    description varchar(200),
+    category varchar(50),
+    price_stars smallint,
+    is_discountable boolean
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select dp.id, dp.str_id, dp.name, dp.description, dp.category, dp.price_stars, dp.is_discountable
+    from dwh.d_product dp
+    where dp.str_id = p_str_id;
+end;
+$$;
+
+create or replace function api.get_all_products()
+returns table (
+    id smallint,
+    str_id varchar(100),
+    name varchar(100),
+    description varchar(200),
+    category varchar(50),
+    price_stars smallint,
+    is_discountable boolean
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+    return query
+    select dp.id, dp.str_id, dp.name, dp.description, dp.category, dp.price_stars, dp.is_discountable
+    from dwh.d_product dp;
 end;
 $$;
 
@@ -223,7 +464,6 @@ create or replace procedure api.add_transaction(
 	p_product_str_id varchar(100),
 	p_date_transaction date,
 	p_time_transaction time,
-	p_stars_price_original integer,
 	p_stars_price_actual integer,
 	p_token text,
 	p_is_subscription_active bool,
@@ -235,20 +475,25 @@ set search_path = api, dwh, pg_temp
 as $$
 declare
 	v_last_user_version_id bigint;
+	v_stars_price_original smallint;
 	v_product_id smallint;	
 	v_date_id integer;
 begin
 	v_last_user_version_id := api.get_last_user_version_id(p_user_id);
-	v_product_id := api.get_product_id_by_str_id(p_product_str_id);	
-	v_date_id := api.get_date_id(p_date_transaction);
+    v_date_id := api.get_date_id(p_date_transaction);
+
+	select id, price_stars 
+    into v_product_id, v_stars_price_original
+    from dwh.d_product 
+    where str_id = p_product_str_id;
 
 	if v_last_user_version_id is null 
-		or v_product_id is null
-		or v_date_id is null 
-	then
-		out_transaction_id := null;
-		return;
-	end if;
+        or v_product_id is null
+        or v_date_id is null 
+    then
+        out_transaction_id := null;
+        return;
+    end if;
 	
 	insert into dwh.f_transaction (
 		user_id,
@@ -265,7 +510,7 @@ begin
 		v_product_id,
 		v_date_id,
 		p_time_transaction,
-		p_stars_price_original,
+		v_stars_price_original,
 		p_stars_price_actual,
 		p_token,
 		p_is_subscription_active
@@ -325,7 +570,12 @@ create or replace procedure api.add_prediction(
 	p_user_id bigint,
 	p_date_prediction date,
 	p_type_id smallint,
-	p_prediction jsonb
+	p_category varchar(50),
+	p_prediction jsonb,
+	p_success bool,
+	p_cards text,
+	p_with_pdf bool,
+	out out_prediction_id bigint
 )
 language plpgsql
 security definer 
@@ -348,14 +598,22 @@ begin
 		user_id,
 		date_id,
 		type_id,
-		prediction
+		category,
+		prediction,
+		success,
+		cards,
+		with_pdf
 	)
 	values (
 		v_user_last_version_id,
 		v_date_id,
 		p_type_id,
-		p_prediction
-	);
+		p_category,
+		p_prediction,
+		p_success,
+		p_cards,
+		p_with_pdf
+	)returning id into out_prediction_id;
 end;
 $$;
 
@@ -394,5 +652,19 @@ begin
 		v_date_id,
 		p_time_log
 	);
+end;
+$$;
+
+create or replace procedure api.mark_transaction_as_refund(
+	p_transaction_id bigint 
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+	update dwh.f_transaction
+	set status = 'refund'
+	where id = p_transaction_id;
 end;
 $$;

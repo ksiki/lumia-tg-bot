@@ -25,7 +25,7 @@ on conflict (id) do nothing;
 
 insert into dwh.d_product (str_id, name, description, category, price_stars, is_discountable)
 values 
-    ('monthly_subscription', 'Premium на месяц', 'Все возможности без ограничений', 'subscription', 150, false),
+    ('monthly_subscription', 'Premium на месяц', 'Все возможности без ограничений.\nТы получишь:\n• Полный гороскоп\n• Расклад Таро на 3 карты ежедневно\n• Лунный календарь на неделю\n• Скидка 50% на все услуги', 'subscription', 150, false),
     ('short_horoscope_for_the_day', 'Гороскоп на день', 'Краткий прогноз главных событий', 'free_service', 0, false),
     ('one_card_of_the_day', 'Карта дня', 'Твой персональный символ и совет', 'free_service', 0, false),
     ('full_horoscope_for_the_day', 'Гороскоп на день', 'Детальный разбор всех сфер жизни', 'subscription_service', 0, false),

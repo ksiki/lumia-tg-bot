@@ -21,5 +21,4 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
     grant usage on schema dwh to $BOT_DB_USER;
     grant select on dwh.d_calendar to $BOT_DB_USER;
-    grant select on dwh.d_product to $BOT_DB_USER;
 EOSQL
