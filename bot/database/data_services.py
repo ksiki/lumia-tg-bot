@@ -84,28 +84,49 @@ class DataServices:
     async def get_transaction(self, transaction_id: int) -> Record | None:
         return await self.__transaction_rep.get_transaction(transaction_id)
 
-    async def mark_transaction_as_refund(self, transaction_id: int) ->  None:
-        await self.__transaction_rep.mark_transaction_as_refund(transaction_id)
+    async def mark_transaction_as_refund_by_id(self, transaction_id: int) ->  None:
+        await self.__transaction_rep.mark_transaction_as_refund_by_id(transaction_id)
 
-    async def handle_purchase(self, transaction_dto: TransactionDTO) -> int:
+    async def mark_transaction_as_refund_by_token(self, token: str) ->  None:
+        await self.__transaction_rep.mark_transaction_as_refund_by_token(token)
+
+    async def handle_purchase(self, transaction_dto: TransactionDTO, prediction_dto: PredictionDTO = None) -> tuple[int]:
         async with self.__pool.acquire() as connection:
             async with connection.transaction():
                 t_id = await self.__transaction_rep.add_new_transaction(connection, transaction_dto)
-                await self.__apply_transaction_benefits(connection, t_id, transaction_dto)
-                return t_id
+                p_id = await self.__apply_transaction_benefits(connection, t_id, transaction_dto, prediction_dto)
+                return t_id, p_id
 
-    async def __apply_transaction_benefits(self, connection, transaction_id: int, transaction_dto: TransactionDTO):
+    async def __apply_transaction_benefits(self, connection, transaction_id: int, transaction_dto: TransactionDTO, prediction_dto: PredictionDTO = None) -> int:
         if transaction_dto.product_str_id == "monthly_subscription":
             sub_dto = SubscriptionDTO(
-                        transaction_dto.user_id,
-                        transaction_id,
-                        datetime.now().date(),
-                        datetime.now().date() + timedelta(days=MOUNTLY_SUBSCRIPTION_LENGTH),
-                        transaction_dto.time_transaction,
-                        "paid"
+                transaction_dto.user_id,
+                transaction_id,
+                datetime.now().date(),
+                datetime.now().date() + timedelta(days=MOUNTLY_SUBSCRIPTION_LENGTH),
+                transaction_dto.time_transaction,
+                "paid"
             )
             new_sub_dtp = await self.__handle_subscription(sub_dto, connection)
             await self.__subscription_rep.add_new_subscription(new_sub_dtp, connection)
+            return -1
+        else:
+            if not prediction_dto:
+                LOG.error("PredictionDTO is null")
+                raise TypeError()
+            
+            new_pred_dto = PredictionDTO(
+                prediction_dto.user_id,
+                prediction_dto.prediction_date,
+                transaction_id,
+                prediction_dto.type,
+                prediction_dto.category,
+                prediction_dto.prediction,
+                prediction_dto.success,
+                prediction_dto.cards,
+                prediction_dto.with_pdf
+            )
+            return await self.__prediction_rep.add_prediction(new_pred_dto, connection)
 
 #===============================================================================================================================================
 # subscription

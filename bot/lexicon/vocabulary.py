@@ -7,7 +7,6 @@ from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 class Msg(LexiconCore, str, Enum):         
     __lexicon_data: dict[str, str] = MESSAGES
 
-    # start dialogue
     START_MESSAGE = "start_message"
     WHATS_YOUR_NAME_QUESTION = "whats_your_name_question"
     YOUR_GIRL_OR_MAN_QUESTION = "your_girl_or_man_question"
@@ -23,8 +22,18 @@ class Msg(LexiconCore, str, Enum):
     NOT_VALID_WHEN_YOUR_BIRTHDAY_QUESTION = "not_valid_when_your_birthday_question"
 
     MENU_MESSAGE = "menu_message"
-    FAILED_PREDICTION = "failed_prediction"
+    FAILED_ANSWER_INVOICE = "failed_answer_invoice"
     FAILED_PREDICTION_REFUND = "failed_prediction_refund"
+    SECCESSFUL_SUBSCRIPTION_PURCHASE = "successful_subscription_purchase"
+
+    REQUEST_DATA_FOR_DEEP_UNDERSTANDING = "request_data_for_deep_understanding"
+    REQUEST_DATA_MATRIX_OF_DESTINY = "request_data_matrix_of_destiny"
+    REQUEST_DATA_HUMAN_DESIGN = "request_data_human_design"
+    REQUEST_DATA_COMPATIBILITY_CHART = "request_data_compatibility_chart"
+    REQUEST_DATA_TEST_OF_LOYALTY = "request_data_test_of_loyalty"
+    FAILED_DATA_FOR_PREDICTION = "failed_data_for_prediction"
+    WAITING_FOR_PREDICTION = "waiting_for_prediction"
+
 
 class Buttons(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = BUTTONS

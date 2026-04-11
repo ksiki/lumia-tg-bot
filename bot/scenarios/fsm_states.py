@@ -13,6 +13,7 @@ class States(StatesGroup):
     PREMIUM_GIFT_THREE_DAYS = State()
 
     MENU = State()
-    CHOICE = State()
     CONFIRM_PAYMENT = State()
+    REQUEST_DATA = State
+    SAVE_REQUEST_DATA = State()
     WAITING_PREDICTION = State()

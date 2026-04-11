@@ -164,6 +164,7 @@ returns table (
     user_version_id bigint,
     date date,
     week_of_year smallint,
+	transaction_id bigint,
     type varchar(100),
     prediction jsonb,
     success bool,
@@ -182,6 +183,7 @@ begin
         du.id as user_version_id,
         dc.date,
         dc.week_of_year,
+		fp.transaction_id,
         dp.str_id as type,
         fp.prediction,
         fp.success,
@@ -206,6 +208,7 @@ returns table (
     user_version_id bigint,
     date date,
     week_of_year smallint,
+	transaction_id bigint,
     type varchar(100),
     prediction jsonb,
     success bool,
@@ -224,6 +227,7 @@ begin
         du.id as user_version_id,
         dc.date,
         dc.week_of_year,
+		fp.transaction_id,
         dp.str_id as type,
         fp.prediction,
         fp.success,
@@ -569,6 +573,7 @@ $$;
 create or replace procedure api.add_prediction(
 	p_user_id bigint,
 	p_date_prediction date,
+	p_transaction_id bigint,
 	p_type_id smallint,
 	p_category varchar(50),
 	p_prediction jsonb,
@@ -597,6 +602,7 @@ begin
 	insert into dwh.f_prediction (
 		user_id,
 		date_id,
+		transaction_id,
 		type_id,
 		category,
 		prediction,
@@ -607,6 +613,7 @@ begin
 	values (
 		v_user_last_version_id,
 		v_date_id,
+		p_transaction_id,
 		p_type_id,
 		p_category,
 		p_prediction,
@@ -655,7 +662,7 @@ begin
 end;
 $$;
 
-create or replace procedure api.mark_transaction_as_refund(
+create or replace procedure api.mark_transaction_as_refund_by_id(
 	p_transaction_id bigint 
 )
 language plpgsql
@@ -666,5 +673,29 @@ begin
 	update dwh.f_transaction
 	set status = 'refund'
 	where id = p_transaction_id;
+end;
+$$;
+
+create or replace procedure api.mark_transaction_as_refund_by_token(
+	p_token text 
+)
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+declare
+	v_transaction_id bigint;
+begin
+	select id
+	into v_transaction_id
+	from dwh.f_transaction
+	where token = p_token;
+
+	if v_transaction_id is null
+	then
+		return;
+	end if; 
+
+	call api.mark_transaction_as_refund_by_id(v_transaction_id);
 end;
 $$;

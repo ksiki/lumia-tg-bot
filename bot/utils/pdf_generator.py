@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import random
 import uuid
 from datetime import time, timedelta
 from logging import Logger
@@ -11,6 +12,7 @@ from docxtpl import DocxTemplate
 
 from database.data_services import DataServices
 from scenarios.message_sendler import create_delayed_message
+from common.constants import MIN_WAITING_TIME_PREDICTION, MAX_WAITING_TIME_PREDICTION
 
 
 BASE_DIR: Final[Path] = Path(__file__).resolve().parent.parent
@@ -29,6 +31,10 @@ async def pdf_worker(data_services: DataServices) -> None:
 
         try:
             prediction = data_services.get_prediction_by_id(prediction_id)
+            if not prediction:
+                LOG.error("Prediction not exists")
+                raise RuntimeError()
+
             data = json.loads(prediction["prediction"])
             template = prediction["type"]
             start_time = time.time()
@@ -37,7 +43,7 @@ async def pdf_worker(data_services: DataServices) -> None:
             
 
             elapsed_time = time.time() - start_time
-            wait_limit = 180
+            wait_limit = random.randint(MIN_WAITING_TIME_PREDICTION, MAX_WAITING_TIME_PREDICTION)
             remaining_wait = max(0, wait_limit - elapsed_time)
 
             create_delayed_message(
@@ -81,7 +87,7 @@ async def generate_pdf(data: dict[str, Any], template_name: str, output_filename
         await process.communicate()
         
         generated_pdf_path = PREDICTIONS_DIR / f"temp_{unique_id}.pdf"
-        final_pdf_path = PREDICTIONS_DIR / output_filename
+        final_pdf_path = PREDICTIONS_DIR / f"{output_filename}.pdf"
         
         if generated_pdf_path.exists():
             if final_pdf_path.exists():

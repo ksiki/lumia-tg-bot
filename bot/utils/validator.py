@@ -5,7 +5,7 @@ from datetime import datetime
 from timezonefinder import TimezoneFinder
 from logging import Logger
 from typing import Final
-
+from config import OPENSTREETMAP_API
 
 LOG: Final[Logger] = logging.getLogger(__name__)
 
@@ -34,6 +34,46 @@ def is_valid_date(date: str) -> bool:
         return False
 
 
+async def is_valid_data_for_prediction(text: str, type: str) -> bool:
+    text = text.strip()
+    
+    date_reg = r"(\d{2}\.\d{2}\.\d{4})"
+    time_reg = r"(([01]\d|2[0-3]):[0-5]\d)"
+    any_reg = r"(.+)"
+
+    schemas = {
+        "fate_matrix": rf"^{date_reg}\n{time_reg}\n{any_reg}$",
+        "human_design": rf"^{any_reg}\n{date_reg}\n{time_reg}\n{any_reg}$",
+        "deep_compatibility_analysis_synastry": rf"^{any_reg}\n{date_reg}\n{time_reg}\n{any_reg}\n\n{any_reg}\n{date_reg}\n{time_reg}\n{any_reg}$",
+        "test_of_loyalty": rf"^{any_reg}\n{date_reg}\n{time_reg}\n{any_reg}\n{any_reg}$",
+        "one_time_deep_seven_card_hand": rf"^{any_reg}$"
+    }
+
+    match = re.match(schemas.get(type, ""), text)
+    if not match:
+        LOG.info(f"Regex failed for mode: {type}")
+        return False
+
+    groups = match.groups()
+    if type == "matrix":
+        return is_valid_date(groups[0]) and \
+               is_valid_time(groups[1]) and \
+               await is_valid_city(groups[3]) is not None
+    elif type == "human_design":
+        return is_valid_date(groups[1]) and \
+               is_valid_time(groups[2]) and \
+               await is_valid_city(groups[4]) is not None
+    elif type == "compatibility":
+        parts = [line.strip() for line in text.split('\n') if line.strip()]
+        v1 = is_valid_date(parts[1]) and is_valid_time(parts[2]) and await is_valid_city(parts[3])
+        v2 = is_valid_date(parts[5]) and is_valid_time(parts[6]) and await is_valid_city(parts[7])
+        return bool(v1 and v2)
+    elif type == "deep_understanding":
+        return len(text) > 10
+
+    return False
+
+
 TF: Final[TimezoneFinder] = TimezoneFinder()
 async def is_valid_city(city: str) -> dict[str, str] | None:
     headers = {"User-Agent": "MyCityValidatorApp/1.0"}
@@ -48,7 +88,7 @@ async def is_valid_city(city: str) -> dict[str, str] | None:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
-                "https://nominatim.openstreetmap.org/search", 
+                OPENSTREETMAP_API, 
                 params=params, 
                 headers=headers,
                 timeout=10.0

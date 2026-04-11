@@ -9,12 +9,19 @@ from common.constants import SUBSCRIBE_DISCOUNT
 from lexicon.vocabulary import Buttons
 
 
-
-CANCEL_CALLBACK_DATA: Final[str] = "payment_cancel"
+CANCEL_CALLBACK_DATA: Final[str] = "cancel"
 CANCEL: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text=Buttons.PAY.text, pay=True)],
         [InlineKeyboardButton(text=Buttons.CANCEL.text, callback_data=CANCEL_CALLBACK_DATA)]
+    ]
+)
+
+
+PAY_CALLBACK_DATA: Final[str] = "payment_cancel"
+PAY: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text=Buttons.PAY.text, pay=True)],
+        [InlineKeyboardButton(text=Buttons.CANCEL.text, callback_data=PAY_CALLBACK_DATA)]
     ]
 )
 
@@ -29,6 +36,7 @@ OPEN_MENU: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
 
 class ProductCallback(CallbackData, prefix="prod"):
     product_id: str
+    category: str
     fact_price: int
     is_subscriber: int
 
@@ -60,6 +68,7 @@ async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboa
             text=button_text,
             callback_data=ProductCallback(
                 product_id=p["str_id"],
+                category=p["category"],
                 fact_price=price,
                 is_subscriber=int(is_subscribed)
             )

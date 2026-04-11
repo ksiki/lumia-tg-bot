@@ -10,3 +10,5 @@ ADMINS: Final[list[int]] = [int(admin_id) for admin_id in config("ADMINS").split
 
 DEEPSEEK_API = "https://api.deepseek.com"
 DEEPSEEK_SECRET = config("DEEPSEEK_SECRET")
+
+OPENSTREETMAP_API = "https://nominatim.openstreetmap.org/search"

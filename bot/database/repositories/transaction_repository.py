@@ -33,10 +33,18 @@ class TransactionRepository(BaseRepository):
         )
         return transaction
 
-    async def mark_transaction_as_refund(self, transaction_id: int) -> None:
-        query = "call api.mark_transaction_as_refund($1)"
+    async def mark_transaction_as_refund_by_id(self, transaction_id: int) -> None:
+        query = "call api.mark_transaction_as_refund_by_id($1)"
         
         await self._pool.fetchrow(
             query,
             transaction_id
+        )
+
+    async def mark_transaction_as_refund_by_token(self, token: str) -> None:
+        query = "call api.mark_transaction_as_refund_by_token($1)"
+        
+        await self._pool.fetchrow(
+            query,
+            token
         )
