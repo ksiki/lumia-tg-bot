@@ -9,3 +9,6 @@ pytest-asyncio
 httpx 
 timezonefinder
 respx
+openai
+docxtpl
+APScheduler

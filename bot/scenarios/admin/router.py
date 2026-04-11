@@ -6,7 +6,6 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from config import ADMINS
-# from lexicon.vocabulary import Msg
 
 
 ADMIN_COMMAND_ROUTER: Final[Router] = Router()
@@ -17,7 +16,7 @@ LOG: Final[Logger] = logging.getLogger(__name__)
 async def admin(message: Message) -> None:
     await message.delete()
 
-    user_id: int = message.from_user.id                                                 # pyright: ignore[reportOptionalMemberAccess]
+    user_id: int = message.from_user.id
     if user_id not in ADMINS: 
         LOG.info(f"User with id={user_id} try use /admin command")
         return

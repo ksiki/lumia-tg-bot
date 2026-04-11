@@ -31,5 +31,5 @@ ACTIVATING_GIFT: Final[ReplyKeyboardMarkup] = ReplyKeyboardMarkup(
         [KeyboardButton(text=Buttons.ACTIVATE.text)]
     ],
     resize_keyboard=True,
-    one_time_keyboard=True
+    one_time_keyboard=True,
 )

@@ -10,7 +10,9 @@ class States(StatesGroup):
     YOUR_CITY_BIRTH = State()
     YOUR_CITY_RESIDENCE = State()
     SUCCESSFUL_ACQUAINTANCE = State()
-    PREMIUM_GIFT_FIVE_DAYS = State()
+    PREMIUM_GIFT_THREE_DAYS = State()
 
     MENU = State()
     CHOICE = State()
+    CONFIRM_PAYMENT = State()
+    WAITING_PREDICTION = State()

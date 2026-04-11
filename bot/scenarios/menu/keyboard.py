@@ -1,4 +1,6 @@
-from aiogram.types import InlineKeyboardMarkup, KeyboardButton
+from typing import Final
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from database.data_services import DataServices
 from aiogram.filters.callback_data import CallbackData
@@ -7,8 +9,28 @@ from common.constants import SUBSCRIBE_DISCOUNT
 from lexicon.vocabulary import Buttons
 
 
+
+CANCEL_CALLBACK_DATA: Final[str] = "payment_cancel"
+CANCEL: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text=Buttons.PAY.text, pay=True)],
+        [InlineKeyboardButton(text=Buttons.CANCEL.text, callback_data=CANCEL_CALLBACK_DATA)]
+    ]
+)
+
+
+OPEN_MENU_CALLBACK_DATA: Final[str] = "open_menu"
+OPEN_MENU: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text=Buttons.OPEN_MENU.text, callback_data=OPEN_MENU_CALLBACK_DATA)]
+    ]
+)
+
+
 class ProductCallback(CallbackData, prefix="prod"):
     product_id: str
+    fact_price: int
+    is_subscriber: int
 
 
 async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboardMarkup:
@@ -29,14 +51,18 @@ async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboa
 
         
         if price > 0: 
-            display_price = price * SUBSCRIBE_DISCOUNT if is_subscribed else price
-            button_text = Buttons.PRODUCT_BATTON_WITH_PRICE.text.format(text=p["name"], price=display_price)
+            price = int(price * SUBSCRIBE_DISCOUNT) if is_subscribed else price
+            button_text = Buttons.PRODUCT_BATTON_WITH_PRICE.text.format(text=p["name"], price=price)
         else:
             button_text = Buttons.PRODUCT_BATTON_WITHOUT_PRICE.text.format(text=p["name"])
 
         builder.button(
-            text=button_text, 
-            callback_data=ProductCallback(product_id=p["str_id"])
+            text=button_text,
+            callback_data=ProductCallback(
+                product_id=p["str_id"],
+                fact_price=price,
+                is_subscriber=int(is_subscribed)
+            )
         )
 
     builder.adjust(1)

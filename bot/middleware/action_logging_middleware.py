@@ -44,6 +44,6 @@ class ActionLoggingMiddleware(BaseMiddleware):
                 
                 await data_services.add_new_action_log(log)
             except Exception as e:
-                LOG.error(f"Error in {__name__}: {e}")
+                LOG.error(f"Log error: {e}")
 
         return result
