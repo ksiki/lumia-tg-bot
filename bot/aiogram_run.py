@@ -2,8 +2,9 @@ import asyncio
 from typing import Final
 from predictions.predictor import Predictor
 
-from create_bot import BOT, DISPATCHER, DATABASE
+from create_bot import BOT, DISPATCHER, DATABASE, SCHEDULER
 from scenarios import START_ROUTER, MENU_ROUTER
+from utils.pdf_generator import pdf_worker, PDF_QUEUE
 from predictions.predictor import Predictor
 from database.data_services import DataServices
 from database.repositories import UserRepository, TransactionRepository, SubscriptionRepository, ActionLogRepository, CalendarRepository, PredictionRepository, ProductsRepository
@@ -18,11 +19,20 @@ async def main() -> None:
                                                  prediction_rep=PredictionRepository(DATABASE.pool),
                                                  products_rep=ProductsRepository(DATABASE.pool),
                                                  calendar_rep=CalendarRepository(DATABASE.pool))
+    
     PREDICTOR = Predictor(DATA_SERVICES)
+    SCHEDULER.start()
+    asyncio.create_task(pdf_worker())
 
     DISPATCHER.include_routers(START_ROUTER, MENU_ROUTER)
     await BOT.delete_webhook(drop_pending_updates=True)
-    await DISPATCHER.start_polling(BOT, data_services=DATA_SERVICES, predictor=PREDICTOR)
+    await DISPATCHER.start_polling(
+        BOT, 
+        data_services=DATA_SERVICES, 
+        predictor=PREDICTOR, 
+        scheduler=SCHEDULER, 
+        pdf_queue=PDF_QUEUE
+    )
     await DATABASE.disconnect()
 
 

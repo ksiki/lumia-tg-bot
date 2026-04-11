@@ -8,7 +8,7 @@ from typing import Any, Callable, Final
 LOG: Final[Logger] = logging.getLogger(__name__)
 
 
-def log_errors(logger: Logger = LOG, raise_error: bool = True) -> Callable:
+def log_errors(logger: Logger = LOG) -> Callable:
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs) -> Any | None:
@@ -29,9 +29,7 @@ def log_errors(logger: Logger = LOG, raise_error: bool = True) -> Callable:
                 return response
             except Exception as e:
                 logger.error(f"Error in {func.__qualname__}: {e}")
-                if raise_error:
-                    raise
-                return None
+                raise
             
         return wrapper
     return decorator

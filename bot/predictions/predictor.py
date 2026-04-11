@@ -29,64 +29,84 @@ class Predictor:
         with open(path, "r", encoding="utf-8") as f:
             self.__cards_taro_data = json.load(f)
 
-    async def generate_prediction(self, tg_user_id: int, prod_str_id: str, **kwargs) -> dict[str, Any]:
+    async def generate_prediction(self, tg_user_id: int, prod_str_id: str, **kwargs) -> int:
         LOG.info("Start generate prediction: {prod_str_id}")
 
-        user_data = await self.__data_services.get_user_actual_data(tg_user_id)
-        prod_id = await self.__data_services.get_product_id_by_str_id(prod_str_id)
-        prod_data = await self.__data_services.get_product(prod_str_id)
+        try:   
+            user_data = await self.__data_services.get_user_actual_data(tg_user_id)
+            prod_id = await self.__data_services.get_product_id_by_str_id(prod_str_id)
+            prod_data = await self.__data_services.get_product(prod_str_id)
 
-        result = {
-            "success": True,
-            "category": prod_data["category"],  # pyright: ignore[reportOptionalSubscript]
-            "prediction": None,
-            "cards": []
-        }
+            result = {
+                "success": True,
+                "prediction": None,
+                "cards": [],
+                "pdf": False
+            }
 
-        match prod_str_id:
-            case "short_horoscope_for_the_day":
-                result["prediction"] = await self.__generate_short_horoscope_for_the_day(user_data)
-            case "one_card_of_the_day":
-                response = await self.__generate_one_card_of_the_day(user_data)
-                result["prediction"] = response[0]
-                result["cards"] = response[1]
-            case "full_horoscope_for_the_day":
-                result["prediction"] = await self.__generate_full_horoscope_for_the_day(user_data)
-            case "three_tarot_cards_for_the_day":
-                response = await self.__generate_three_tarot_cards_for_the_day(user_data)
-                result["prediction"] = response[0]
-                result["cards"] = response[1]
-            case "lunar_horoscope_for_the_week":
-                result["prediction"] = await self.__generate_lunar_horoscope_week(user_data)
-            case "one_time_deep_seven_card_hand":
-                response = await self.__generate_one_time_deep_seven_card_hand(user_data, **kwargs)
-                result["prediction"] = response[0]
-                result["cards"] = response[1]
-            case "fate_matrix":
-                result["prediction"] = await self.__generate_fate_matrix(tg_user_id, **kwargs)
-            case "human_design":
-                result["prediction"] = await self.__generate_human_design(tg_user_id, **kwargs)
-            case "deep_compatibility_analysis_synastry":
-                result["prediction"] = await self.__generate_deep_compatibility_analysis_synastry(tg_user_id, **kwargs)
-            case "test_of_loyalty":
-                result["prediction"] = await self.__generate_test_of_loyalty(tg_user_id, **kwargs)
+            match prod_str_id:
+                case "short_horoscope_for_the_day":
+                    result["prediction"] = await self.__generate_short_horoscope_for_the_day(user_data)
+                case "one_card_of_the_day":
+                    response = await self.__generate_one_card_of_the_day(user_data)
+                    result["prediction"] = response[0]
+                    result["cards"] = response[1]
+                case "full_horoscope_for_the_day":
+                    result["prediction"] = await self.__generate_full_horoscope_for_the_day(user_data)
+                case "three_tarot_cards_for_the_day":
+                    response = await self.__generate_three_tarot_cards_for_the_day(user_data)
+                    result["prediction"] = response[0]
+                    result["cards"] = response[1]
+                case "lunar_horoscope_for_the_week":
+                    result["prediction"] = await self.__generate_lunar_horoscope_week(user_data)
+                case "one_time_deep_seven_card_hand":
+                    response = await self.__generate_one_time_deep_seven_card_hand(user_data, **kwargs)
+                    result["prediction"] = response[0]
+                    result["cards"] = response[1]
+                    result["pdf"] = True
+                case "fate_matrix":
+                    result["prediction"] = await self.__generate_fate_matrix(tg_user_id, **kwargs)
+                    result["pdf"] = True
+                case "human_design":
+                    result["prediction"] = await self.__generate_human_design(tg_user_id, **kwargs)
+                    result["pdf"] = True
+                case "deep_compatibility_analysis_synastry":
+                    result["prediction"] = await self.__generate_deep_compatibility_analysis_synastry(tg_user_id, **kwargs)
+                    result["pdf"] = True
+                case "test_of_loyalty":
+                    result["prediction"] = await self.__generate_test_of_loyalty(tg_user_id, **kwargs)
+                    result["pdf"] = True
 
-        if not result["prediction"]:
-            LOG.error("Prediction not generated")
-            result["success"] = False
-            return result
-         
-        await self.__save_prediction(tg_user_id, prod_id, result["prediction"])
+            if not result["prediction"]:
+                LOG.error("Prediction not generated")
+                result["success"] = False
+  
+            prediction_id = await self.__save_prediction(
+                tg_user_id, 
+                prod_id, 
+                prod_data["category"], 
+                result["prediction"], 
+                result["success"], 
+                result["cards"], 
+                result["pdf"]
+            )
+            LOG.info("End generate prediction: {prod_str_id}")    
+            return prediction_id
+        except Exception as e:
+            LOG.error("Failed generate prediction: {e}")   
+            raise
 
-        LOG.info("End generate prediction: {prod_str_id}")
-        return result
-
-    async def __save_prediction(self, user_id: int, type_id: int, prediction: dict[str, str]) -> None:
+    async def __save_prediction(self, user_id: int, type_id: int, category: str, prediction: dict, success: bool, cards: list, with_pdf: bool) -> int:
         prediction = PredictionDTO(user_id,
-                                   datetime.now().date(),
-                                   type_id,
-                                   prediction)
-        await self.__data_services.add_new_prediction(prediction)
+            datetime.now().date(),
+            type_id,
+            category,
+            prediction,
+            success,
+            ",".join(cards),
+            with_pdf
+        )
+        return await self.__data_services.add_new_prediction(prediction)
 
     async def __get_json_response(self, prompt: str) -> Any:
         response = await self.__client.chat.completions.create(

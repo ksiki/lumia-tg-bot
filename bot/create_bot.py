@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import TOKEN, PG_LINK, REDIS_LINK, DEBUG
 from database.core.database import Database
@@ -12,6 +13,8 @@ from database.core.database import Database
 log_level = logging.DEBUG if DEBUG else logging.ERROR
 logging.basicConfig(level=log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 LOG: Final[Logger] = logging.getLogger(__name__)
+
+SCHEDULER: Final[AsyncIOScheduler] = AsyncIOScheduler(timezone='Europe/Moscow')
 
 DATABASE: Final[Database] = Database(PG_LINK)
 

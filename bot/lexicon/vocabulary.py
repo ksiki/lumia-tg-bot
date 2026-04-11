@@ -7,8 +7,6 @@ from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 class Msg(LexiconCore, str, Enum):         
     __lexicon_data: dict[str, str] = MESSAGES
 
-    MENU_MESSAGE = "menu_message"
-
     # start dialogue
     START_MESSAGE = "start_message"
     WHATS_YOUR_NAME_QUESTION = "whats_your_name_question"
@@ -18,12 +16,15 @@ class Msg(LexiconCore, str, Enum):
     YOUR_CITY_BIRTH_QUESTION = "your_city_birth_question"
     YOUR_CITY_RESIDENCE_QUESTION = "your_city_residence_question"
     SUCCESSFUL_REGISTRATION = "successful_acquaintance"
-    PREMIUM_GIFT_FIVE_DAYS = "premium_gift_five_days"
+    PREMIUM_GIFT_THREE_DAYS = "premium_gift_five_days"
 
     NOT_VALID_YOUR_CITY_QUESTION = "not_valid_your_city_question"
     NOT_VALID_TIME_YOUR_BIRTH_QUESTION = "not_valid_time_your_birth_question"
     NOT_VALID_WHEN_YOUR_BIRTHDAY_QUESTION = "not_valid_when_your_birthday_question"
 
+    MENU_MESSAGE = "menu_message"
+    FAILED_PREDICTION = "failed_prediction"
+    FAILED_PREDICTION_REFUND = "failed_prediction_refund"
 
 class Buttons(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = BUTTONS
@@ -38,6 +39,7 @@ class Buttons(LexiconCore, str, Enum):
     PRODUCT_BATTON_WITHOUT_PRICE = "product_batton_without_price"
     PAY = "pay"
     CANCEL = "cancel"
+    OPEN_MENU = "open_menu"
 
 
 class Prompts(LexiconCore, str, Enum):
