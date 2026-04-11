@@ -16,23 +16,25 @@ LOG: Final[Logger] = logging.getLogger(__name__)
 
 @log_all_methods(log_errors(LOG))
 class DataServices:
-    def __init__(self, user_rep: UserRepository,
-                 transaction_rep: TransactionRepository,
-                 subscription_rep: SubscriptionRepository,
-                 action_log_rep: ActionLogRepository,
-                 prediction_rep: PredictionRepository,
-                 products_rep: ProductsRepository,
-                 calendar_rep: CalendarRepository
-                 ) -> None:
-        self.__user_rep = user_rep
-        self.__transaction_rep = transaction_rep
-        self.__subscription_rep = subscription_rep
-        self.__action_log_rep = action_log_rep
-        self.__prediction_rep = prediction_rep
-        self.__products_rep = products_rep
-        self.__calendar_rep = calendar_rep
+    def __init__(self, pool) -> None:
+        self.__pool = pool
+        self.__user_rep = UserRepository(self.__pool)
+        self.__transaction_rep = TransactionRepository(self.__pool)
+        self.__subscription_rep = SubscriptionRepository(self.__pool)
+        self.__action_log_rep = ActionLogRepository(self.__pool)
+        self.__prediction_rep = PredictionRepository(self.__pool)
+        self.__products_rep = ProductsRepository(self.__pool)
+        self.__calendar_rep = CalendarRepository(self.__pool)        
 
 
+#===============================================================================================================================================
+# calendar
+    async def get_week(self, fount_date: date) -> Record | None:
+        response = await self.__calendar_rep.get_week(fount_date)
+        return response
+
+#===============================================================================================================================================
+# user
     async def is_user_registered(self, user_id: int) -> bool:
         response = await self.__user_rep.exists(user_id)
         return response
@@ -40,19 +42,19 @@ class DataServices:
     async def get_user_actual_data(self, user_id: int) -> Record | None:
         response = await self.__user_rep.get_actual_data(user_id)
         return response
-    
-    async def get_week(self, fount_date: date) -> Record | None:
-        response = await self.__calendar_rep.get_week(fount_date)
-        return response
 
     async def is_user_has_active_subscription(self, user_id: int) -> bool:
         response = await self.__subscription_rep.exists_active_subscription(user_id)
         return response
+    
+    async def register_user(self, user_dto: UserDTO) -> None:
+        await self.__user_rep.add_new_user(user_dto)
 
-    async def get_active_subscription(self, user_id: int) -> Record | None:
-        response = await self.__subscription_rep.get_active_subscription(user_id)
-        return response
+    async def update_user_date(self, user_dto: UserDTO) -> None:
+        await self.__user_rep.add_new_user(user_dto)
 
+#===============================================================================================================================================
+# product
     async def get_product(self, str_id: str) -> Record | None:
         response = await self.__products_rep.get_product(str_id)
         return response
@@ -65,6 +67,8 @@ class DataServices:
         response = await self.__products_rep.get_all_product()
         return response
 
+#===============================================================================================================================================
+# prediction
     async def get_prediction(self, found_prediction: GetPredictionDTO) -> Record | None:
         response = await self.__prediction_rep.get_prediction(found_prediction)
         return response
@@ -72,39 +76,52 @@ class DataServices:
     async def get_prediction_by_id(self, prediction_id: int) -> Record | None:
         return await self.__prediction_rep.get_prediction_by_id(prediction_id)
 
-    async def register_user(self, user_dto: UserDTO) -> None:
-        await self.__user_rep.add_new_user(user_dto)
+    async def add_new_prediction(self, prediction_dto: PredictionDTO) -> int:
+        return await self.__prediction_rep.add_prediction(prediction_dto)
 
-    async def update_user_date(self, user_dto: UserDTO) -> None:
-        await self.__user_rep.add_new_user(user_dto)
-
+#===============================================================================================================================================
+# transaction
     async def get_transaction(self, transaction_id: int) -> Record | None:
         return await self.__transaction_rep.get_transaction(transaction_id)
 
     async def mark_transaction_as_refund(self, transaction_id: int) ->  None:
         await self.__transaction_rep.mark_transaction_as_refund(transaction_id)
 
-    async def add_new_transaction(self, transaction_dto: TransactionDTO) -> int:
-        transaction_id = await self.__transaction_rep.add_new_transaction(transaction_dto)
+    async def handle_purchase(self, transaction_dto: TransactionDTO) -> int:
+        async with self.__pool.acquire() as connection:
+            async with connection.transaction():
+                t_id = await self.__transaction_rep.add_new_transaction(connection, transaction_dto)
+                await self.__apply_transaction_benefits(connection, t_id, transaction_dto)
+                return t_id
+
+    async def __apply_transaction_benefits(self, connection, transaction_id: int, transaction_dto: TransactionDTO):
         if transaction_dto.product_str_id == "monthly_subscription":
             sub_dto = SubscriptionDTO(
-                transaction_dto.user_id,
-                transaction_id,
-                datetime.now().date(),
-                datetime.now().date() + timedelta(days=MOUNTLY_SUBSCRIPTION_LENGTH),
-                transaction_dto.time_transaction,
-                "paid"
+                        transaction_dto.user_id,
+                        transaction_id,
+                        datetime.now().date(),
+                        datetime.now().date() + timedelta(days=MOUNTLY_SUBSCRIPTION_LENGTH),
+                        transaction_dto.time_transaction,
+                        "paid"
             )
-            await self.add_new_subscription(sub_dto)
-        return transaction_id
+            new_sub_dtp = await self.__handle_subscription(sub_dto, connection)
+            await self.__subscription_rep.add_new_subscription(new_sub_dtp, connection)
+
+#===============================================================================================================================================
+# subscription
+    async def get_active_subscription(self, user_id: int) -> Record | None:
+        response = await self.__subscription_rep.get_active_subscription(user_id)
+        return response
+
 
     async def add_new_subscription(self, subscription_dto: SubscriptionDTO) -> None:
-        current_subscription = await self.get_active_subscription(subscription_dto.user_id)
+        new_sub_dtp = await self.__handle_subscription(subscription_dto)
+        await self.__subscription_rep.add_new_subscription(new_sub_dtp)
 
+    async def __handle_subscription(self, subscription_dto: SubscriptionDTO, connection = None) -> SubscriptionDTO:
+        last_sub = await self.__subscription_rep.get_last_subscription(subscription_dto.user_id, connection)
         new_dto = None
-        if current_subscription:
-            last_sub = await self.__subscription_rep.get_last_subscription(subscription_dto.user_id)
-            
+        if last_sub and last_sub["end_date"] >= datetime.now().date():
             new_start_date = last_sub["end_date"] + timedelta(days=1)
             new_end_date = new_start_date + (subscription_dto.end_date - subscription_dto.start_date)
             new_dto = SubscriptionDTO(
@@ -115,11 +132,9 @@ class DataServices:
                 subscription_dto.created_at_time,
                 subscription_dto.status
             )
-
-        await self.__subscription_rep.add_new_subscription(new_dto if new_dto else subscription_dto)
-
+        return new_dto or subscription_dto
+    
+#===============================================================================================================================================
+# action log
     async def add_new_action_log(self, action_log_dto: ActionLogDTO) -> None:
         await self.__action_log_rep.add_action_log(action_log_dto)
-
-    async def add_new_prediction(self, prediction_dto: PredictionDTO) -> int:
-        return await self.__prediction_rep.add_prediction(prediction_dto)

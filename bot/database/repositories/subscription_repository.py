@@ -8,10 +8,11 @@ class SubscriptionRepository(BaseRepository):
     def __init__(self, pool: Pool) -> None:
         super().__init__(pool)
 
-    async def add_new_subscription(self, subscription: SubscriptionDTO) -> None:
+    async def add_new_subscription(self, subscription: SubscriptionDTO, connection = None) -> None:
         query = "call api.add_subscription($1, $2, $3, $4, $5, $6)"
 
-        await self._pool.execute(
+        conn = connection if connection else self._pool
+        await conn.execute(
             query,
             subscription.user_id,
             subscription.transaction_id,
@@ -34,10 +35,11 @@ class SubscriptionRepository(BaseRepository):
         )
         return subscription
 
-    async def get_last_subscription(self, user_id: int) -> Record | None:
+    async def get_last_subscription(self, user_id: int, connection = None) -> Record | None:
         query = "select * from api.get_last_subscription($1)"
 
-        subscription = await self._pool.fetchrow(
+        conn = connection if connection else self._pool
+        subscription = await conn.fetchrow(
             query,
             user_id
         )

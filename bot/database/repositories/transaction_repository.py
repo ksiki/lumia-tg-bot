@@ -8,10 +8,10 @@ class TransactionRepository(BaseRepository):
     def __init__(self, pool: Pool) -> None:
         super().__init__(pool)
 
-    async def add_new_transaction(self, transaction: TransactionDTO) -> int:
+    async def add_new_transaction(self, connection, transaction: TransactionDTO) -> int:
         query = "call api.add_transaction($1, $2, $3, $4, $5, $6, $7, $8)"
 
-        transaction_id = await self._pool.fetchval(
+        transaction_id = await connection.fetchval(
             query,
             transaction.user_id,
             transaction.product_str_id,

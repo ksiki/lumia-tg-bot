@@ -7,22 +7,15 @@ from scenarios import START_ROUTER, MENU_ROUTER
 from utils.pdf_generator import pdf_worker, PDF_QUEUE
 from predictions.predictor import Predictor
 from database.data_services import DataServices
-from database.repositories import UserRepository, TransactionRepository, SubscriptionRepository, ActionLogRepository, CalendarRepository, PredictionRepository, ProductsRepository
 
 
 async def main() -> None:
     await DATABASE.connect()
-    DATA_SERVICES: Final[DataServices] = DataServices(user_rep=UserRepository(DATABASE.pool),
-                                                 transaction_rep=TransactionRepository(DATABASE.pool),
-                                                 subscription_rep=SubscriptionRepository(DATABASE.pool),
-                                                 action_log_rep=ActionLogRepository(DATABASE.pool),
-                                                 prediction_rep=PredictionRepository(DATABASE.pool),
-                                                 products_rep=ProductsRepository(DATABASE.pool),
-                                                 calendar_rep=CalendarRepository(DATABASE.pool))
+    DATA_SERVICES: Final[DataServices] = DataServices(DATABASE.pool)
     
     PREDICTOR = Predictor(DATA_SERVICES)
     SCHEDULER.start()
-    asyncio.create_task(pdf_worker())
+    asyncio.create_task(pdf_worker(DATA_SERVICES))
 
     DISPATCHER.include_routers(START_ROUTER, MENU_ROUTER)
     await BOT.delete_webhook(drop_pending_updates=True)

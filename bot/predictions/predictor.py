@@ -96,6 +96,8 @@ class Predictor:
             LOG.error("Failed generate prediction: {e}")   
             raise
 
+#===============================================================================================================================================
+# services
     async def __save_prediction(self, user_id: int, type_id: int, category: str, prediction: dict, success: bool, cards: list, with_pdf: bool) -> int:
         prediction = PredictionDTO(user_id,
             datetime.now().date(),
@@ -140,6 +142,8 @@ class Predictor:
 
         return cards
 
+#===============================================================================================================================================
+# tare predictions
     async def __generate_one_card_of_the_day(self, user_data: Record) -> list[Any]:
         cards = self.__get_random_taro_cards()
 
@@ -180,6 +184,8 @@ class Predictor:
         prediction = await self.__get_json_response(prompt)
         return [prediction, cards]
 
+#===============================================================================================================================================
+# horoscope
     async def __generate_short_horoscope_for_the_day(self, user_data: Record) -> dict[str, str] | None: 
         if not user_data:
             LOG.error("User data is empty")
@@ -237,6 +243,8 @@ class Predictor:
         prediction = await self.__get_json_response(prompt)
         return prediction
 
+#===============================================================================================================================================
+# microtransactions
     async def __generate_fate_matrix(self, user_id: int, data: str) -> dict[str, str]:
         prompt = Prompts.MATRIX_OF_DESTINY.format(
             user_id=user_id,
