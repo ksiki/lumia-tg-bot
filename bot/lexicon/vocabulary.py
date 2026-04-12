@@ -1,5 +1,4 @@
 from enum import Enum
-from tkinter.messagebox import CANCEL
 from lexicon.lexicon_logic import LexiconCore
 from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
 
@@ -15,7 +14,7 @@ class Msg(LexiconCore, str, Enum):
     YOUR_CITY_BIRTH_QUESTION = "your_city_birth_question"
     YOUR_CITY_RESIDENCE_QUESTION = "your_city_residence_question"
     SUCCESSFUL_REGISTRATION = "successful_acquaintance"
-    PREMIUM_GIFT_THREE_DAYS = "premium_gift_five_days"
+    PREMIUM_GIFT_THREE_DAYS = "premium_gift_three_days"
 
     NOT_VALID_YOUR_CITY_QUESTION = "not_valid_your_city_question"
     NOT_VALID_TIME_YOUR_BIRTH_QUESTION = "not_valid_time_your_birth_question"
@@ -32,8 +31,11 @@ class Msg(LexiconCore, str, Enum):
     REQUEST_DATA_COMPATIBILITY_CHART = "request_data_compatibility_chart"
     REQUEST_DATA_TEST_OF_LOYALTY = "request_data_test_of_loyalty"
     FAILED_DATA_FOR_PREDICTION = "failed_data_for_prediction"
+    WAITING_FOR_SERVICE = "waiting_for_service"
     WAITING_FOR_PREDICTION = "waiting_for_prediction"
-
+    PREDICTION = "prediction"
+    SERVICE = "service"
+    PROMOTION_SUBSCRIPTION = "promotion_subscription"
 
 class Buttons(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = BUTTONS
@@ -41,7 +43,8 @@ class Buttons(LexiconCore, str, Enum):
     START_ACQUAINTANCE = "start_acquaintance"
     GIRL = "girl"
     MAN = "man"
-    FORTH = "forth"
+    NEXT = "next"
+    BACK = "back"
     ACTIVATE = "activate"
     AGAIN = "again"
     PRODUCT_BATTON_WITH_PRICE = "product_batton_with_price"

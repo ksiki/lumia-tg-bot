@@ -21,7 +21,7 @@ SEX_QUESTION: Final[ReplyKeyboardMarkup] = ReplyKeyboardMarkup(
 )
 CONFIRMATION_REGISTRATION: Final[ReplyKeyboardMarkup] = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text=Buttons.FORTH.text)]
+        [KeyboardButton(text=Buttons.NEXT.text)]
     ],
     resize_keyboard=True,
     one_time_keyboard=True

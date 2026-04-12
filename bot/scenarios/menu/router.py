@@ -1,14 +1,18 @@
+import json
+import logging
+import random
 from asyncio import Queue
 from functools import partial
-import logging
 from logging import Logger
-from typing import Final
+from typing import Final, Any
+from datetime import datetime, timedelta
+
 from aiogram import F, Router
+from aiogram.filters import or_f, and_f
 from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
-from datetime import datetime
-
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from database.DTO import TransactionDTO, PredictionDTO
 from predictions.predictor import Predictor
 from lexicon.vocabulary import Buttons, Msg
@@ -16,31 +20,55 @@ from database.data_services import DataServices
 from middleware.action_logging_middleware import ActionLoggingMiddleware
 from middleware.text_message import TypingActionMiddleware
 from scenarios.fsm_states import States
-from scenarios.message_sendler import send_message
+from scenarios.message_sendler import create_delayed_message, send_message, send_prediction, send_service
 from scenarios.stars_refunder import refund_payment_by_charge_id
 from utils.validator import is_valid_data_for_prediction
-from scenarios.menu.keyboard import (ProductCallback, get_menu_kb, 
-                                     PAY, PAY_CALLBACK_DATA,
-                                     OPEN_MENU, OPEN_MENU_CALLBACK_DATA,
-                                     CANCEL, CANCEL_CALLBACK_DATA)
-from common.constants import CURRENCY
-
+from scenarios.menu.keyboard import (
+    ProductCallback, get_menu_kb, 
+    ServiceMessageData, get_service_mess_kb,
+    PAY, CANCEL, OPEN_MENU,
+    CANCEL_PAY_CALLBACK_DATA, OPEN_MENU_CALLBACK_DATA, CANCEL_CALLBACK_DATA
+)
+from common.constants import CURRENCY, GIFT_MESSAGE_EFFECT_ID, DEBUG_WAIT
+from config import ADMINS, DEBUG
 
 MENU_ROUTER: Final[Router] = Router()
 MENU_ROUTER.message.middleware(ActionLoggingMiddleware())
 MENU_ROUTER.message.middleware(TypingActionMiddleware())
 LOG: Final[Logger] = logging.getLogger(__name__)
 
+CAT_SUBSCRIPTION: Final[str] = "subscription"
+CAT_MICROTRANSACTION: Final[str] = "microtransaction"
+CAT_FREE_SERVICE: Final[str] = "free_service"
+CAT_SUB_SERVICE: Final[str] = "subscription_service"
+PROD_MONTHLY_SUB: Final[str] = "monthly_subscription"
+PRICE_FOR_ADMINS: Final[int] = 1
+
+REQUEST_MESSAGES: Final[dict[str, str]] = {
+    "one_time_deep_seven_card_hand": Msg.REQUEST_DATA_FOR_DEEP_UNDERSTANDING.text,
+    "fate_matrix": Msg.REQUEST_DATA_MATRIX_OF_DESTINY.text,
+    "human_design": Msg.REQUEST_DATA_HUMAN_DESIGN.text,
+    "deep_compatibility_analysis_synastry": Msg.REQUEST_DATA_COMPATIBILITY_CHART.text,
+    "test_of_loyalty": Msg.REQUEST_DATA_TEST_OF_LOYALTY.text
+}
+
 
 #===============================================================================================================================================
 # main menu
+@MENU_ROUTER.callback_query(
+    or_f(
+        and_f(F.data == OPEN_MENU_CALLBACK_DATA, States.MENU),
+        and_f(F.data == CANCEL_CALLBACK_DATA, States.SAVE_REQUEST_DATA)
+    )
+)
 @MENU_ROUTER.message(F.text == Buttons.ACTIVATE.text, States.MENU)
-@MENU_ROUTER.callback_query(F.data == OPEN_MENU_CALLBACK_DATA, States.MENU)
 async def menu_handler(event: Message | CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
     return await send_main_menu(event, state, data_services)
 
 
-async def send_main_menu(event: Message | CallbackQuery, state: FSMContext, data_services: DataServices) -> None:
+async def send_main_menu(event: Message | CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
+    if isinstance(event, CallbackQuery):
+        await event.answer("")
     message = event if isinstance(event, Message) else event.message
     return await send_message(
         message,
@@ -49,7 +77,6 @@ async def send_main_menu(event: Message | CallbackQuery, state: FSMContext, data
         States.REQUEST_DATA,
         await get_menu_kb(data_services, message.chat.id)
     )
-
 
 #===============================================================================================================================================
 # request data from user
@@ -65,118 +92,100 @@ async def request_data(
 ) -> Message:
     await callback.message.delete()
     
-    if callback_data.category == "microtransaction":
+    product_id = callback_data.product_id
+    category = callback_data.category
+
+    if category in (CAT_SUBSCRIPTION, CAT_MICROTRANSACTION):
         await state.clear()
         await state.update_data(
-            product_id=callback_data.product_id,
+            product_id=product_id,
             fact_price=callback_data.fact_price,
             is_subscriber=callback_data.is_subscriber 
         )
 
-        msg = get_message(callback_data.product_id)
-        return await send_message(
-            callback.message,
-            msg,
-            state,
-            States.SAVE_REQUEST_DATA,
-            CANCEL
-        )
+        if category == CAT_SUBSCRIPTION:
+            return await handle_product_click(callback.message, state, data_services)
 
-    tran_dto = TransactionDTO(
-        callback.message.chat.id,
-        callback_data.product_id,
-        datetime.now().date(),
-        datetime.now().time(),
-        callback_data.fact_price,
-        None,
-        callback_data.is_subscriber
-    )
-    await handle_user_request(
-        callback.message,
-        state,
-        predictor,
-        scheduler,
-        pdf_queue,
-        data_services,
-        tran_dto
-    )    
+        prompt_text = REQUEST_MESSAGES.get(product_id, Msg.WAITING_FOR_SERVICE.text)
+        return await send_message(
+            message=callback.message,
+            mes_text=prompt_text,
+            state=state,
+            new_state=States.SAVE_REQUEST_DATA,
+            reply_markup=CANCEL
+        )
+    
+    await send_waiting_message(callback.message, state, Msg.WAITING_FOR_SERVICE.text)
+    try:
+        now = datetime.now()
+        tran_dto = TransactionDTO(
+            user_id=callback.message.chat.id,
+            product_str_id=product_id,
+            date_transaction=now.date(),
+            time_transaction=now.time(),
+            stars_price_actual=callback_data.fact_price,
+            token=None,
+            is_subscription_active=bool(int(callback_data.is_subscriber))
+        )
+        return await handle_user_request(
+            callback.message, state, predictor, scheduler, pdf_queue, data_services, tran_dto
+        )    
+    except Exception as e:
+        LOG.error(f"Prediction request failed: {e}")
+        return await failed_send_prediction(callback.message, state, None)
 
 
 @MENU_ROUTER.message(F.text, States.SAVE_REQUEST_DATA)
-async def save_request_data(message: Message, state: FSMContext) -> Message:
-    await message.delete()
-    text = message.text
-    if not is_valid_data_for_prediction(text):
-        return await send_message(
-            message,
-            Msg.FAILED_DATA_FOR_PREDICTION.text
-        )
+async def save_request_data(message: Message, state: FSMContext, data_services: DataServices) -> Message:
+    temp_data = await state.get_data()
+    product_id = temp_data.get("product_id")
+
+    if not await is_valid_data_for_prediction(message.text, product_id):
+        LOG.info(f"Invalid data format for {product_id} from user {message.from_user.id}")
+        return await send_message(message, Msg.FAILED_DATA_FOR_PREDICTION.text)
     
-    await state.update_data(
-        data_for_prediction=text
-    )
-    await handle_product_click()
-
-
-def get_message(prod_str_id: str) -> str:
-    match prod_str_id:
-        case "one_time_deep_seven_card_hand":
-            return Msg.REQUEST_DATA_FOR_DEEP_UNDERSTANDING.text
-        case "fate_matrix":
-            return Msg.REQUEST_DATA_MATRIX_OF_DESTINY.text
-        case "human_design":
-            return Msg.REQUEST_DATA_HUMAN_DESIGN.text
-        case "deep_compatibility_analysis_synastry":
-            return Msg.REQUEST_DATA_COMPATIBILITY_CHART.text
-        case "test_of_loyalty":
-            return Msg.REQUEST_DATA_TEST_OF_LOYALTY.text
+    await state.update_data(data_for_prediction=message.text)
+    await handle_product_click(message, state, data_services)
 
 
 #===============================================================================================================================================
 # handle payments
 async def handle_product_click(message: Message, state: FSMContext, data_services: DataServices) -> Message:
-    await message.delete()
-    
     try:
-        temp_data = await state.get_data()
-        product_id = temp_data["product_id"]
-        fact_price = temp_data["fact_price"]
-        is_subscriber = temp_data["is_subscriber"]
-
-        product = await data_services.get_product(product_id)
-        item_name = product["name"]
-        item_description = product["description"]
-        payload = product_id + ":" + str(is_subscriber)
-        prices = [LabeledPrice(label=item_name, amount=1)]
+        data = await state.get_data()
+        product = await data_services.get_product(data["product_id"])
+        
+        payload = f"{data['product_id']}:{data['is_subscriber']}"
+        
+        fact_price = data["fact_price"]
+        if message.chat.id in ADMINS:
+            fact_price = PRICE_FOR_ADMINS
+        prices = [LabeledPrice(label=product["name"], amount=fact_price)]
 
         await state.set_state(States.CONFIRM_PAYMENT)
         return await message.answer_invoice(
-            title=item_name,
-            description=item_description,
+            title=product["name"],
+            description=product["description"],
             prices=prices,
             payload=payload,
             currency=CURRENCY,
             provider_token="",
             reply_markup=PAY
         )
-    except:
-        LOG.error("Failed send answer invoice")
-        await send_message(
-            message,
-            Msg.FAILED_ANSWER_INVOICE.text,
-            state,
-            States.MENU,
-            OPEN_MENU
+    except Exception as e:
+        LOG.error(f"Invoice sending failed: {e}")
+        return await send_message(
+            message, Msg.FAILED_ANSWER_INVOICE.text, state, States.MENU, OPEN_MENU
         )
 
 
 @MENU_ROUTER.pre_checkout_query(States.CONFIRM_PAYMENT)
 async def process_pre_checkout_query(pre_checkout_query: PreCheckoutQuery) -> None:
-    LOG.info("Confirm payment")
+    LOG.info(f"Pre-checkout received from {pre_checkout_query.from_user.id}")
     await pre_checkout_query.answer(ok=True)
 
 
-@MENU_ROUTER.message(F.successful_payment, States.CONFIRM_PAYMENT)
+@MENU_ROUTER.message(F.successful_payment, States.CONFIRM_PAYMENT, flags={"skip_chat_action": True})
 async def process_successful_payment(
     message: Message, 
     state: FSMContext, 
@@ -186,50 +195,45 @@ async def process_successful_payment(
     data_services: DataServices
 ) -> Message:
     await message.delete()
-    payment_info = message.successful_payment
+    payment = message.successful_payment
+    user_id = message.chat.id
+    
+    payload_parts = payment.invoice_payload.split(":")
+    product_id = payload_parts[0]
+    is_sub_val = bool(int(payload_parts[1]))
 
-    LOG.info(f"Payment: {payment_info.total_amount} start. UserId: {message.chat.id}. Payload: {payment_info.invoice_payload}")
-
+    LOG.info(f"Payment success: {payment.total_amount} Stars from {user_id} for {product_id}")
     try:
         tran_dto = TransactionDTO(
-            message.chat.id,
-            payment_info.invoice_payload.split(":")[0],
+            user_id,
+            product_id,
             datetime.now().date(),
             datetime.now().time(),
-            payment_info.total_amount,
-            payment_info.telegram_payment_charge_id,
-            bool(int(payment_info.invoice_payload.split(":")[1]))
+            payment.total_amount,
+            payment.telegram_payment_charge_id,
+            is_sub_val
         )
 
-        temp_data = await state.get_data()
-        await state.clear()
+        temp_data = None
+        if product_id != PROD_MONTHLY_SUB:
+            await send_waiting_message(message, state, Msg.WAITING_FOR_PREDICTION.text)
+            temp_data = await state.get_data()
+            await state.clear()
+
         await handle_user_request(
-            message,
-            state,
-            predictor,
-            scheduler,
-            pdf_queue,
-            data_services,
-            tran_dto,
-            temp_data["data_for_prediction"]
+            message, state, predictor, scheduler, pdf_queue, data_services, tran_dto,
+            data=temp_data.get("data_for_prediction") if temp_data else None
         )
-    except:
-        await failed_send_prediction(
-            message,
-            state,
-            refund_method=partial(
-                refund_payment_by_charge_id, 
-                message.bot, 
-                message.chat.id, 
-                payment_info.telegram_payment_charge_id, 
-                data_services
-            )
-        )
+    except Exception as e:
+        LOG.error(f"Processing payment request failed: {e}")
+        refund = partial(refund_payment_by_charge_id, message.bot, user_id, payment.telegram_payment_charge_id, data_services)
+        await failed_send_prediction(message, state, refund)
     
-    try:
-        await refund_payment_by_charge_id(message.bot, message.chat.id, message.successful_payment.telegram_payment_charge_id, data_services)
-    except:
-        pass
+    if message.chat.id in ADMINS:
+        try:
+            await refund_payment_by_charge_id(message.bot, user_id, payment.telegram_payment_charge_id, data_services)
+        except Exception as e:
+            LOG.error(f"Auto-refund failed: {e}")
 
 
 #===============================================================================================================================================
@@ -244,25 +248,19 @@ async def handle_user_request(
     tran_dto: TransactionDTO,
     **kwargs
 ) -> None:
-    await state.set_state(States.WAITING_PREDICTION)
-    if tran_dto.product_str_id == "monthly_subscription":
+    if tran_dto.product_str_id == PROD_MONTHLY_SUB:
         await data_services.handle_purchase(tran_dto)
-        await send_message(
-            message,
-            Msg.SECCESSFUL_SUBSCRIPTION_PURCHASE.text,
-            state,
-            States.MENU,
-            OPEN_MENU
+        return await send_message(
+            message, Msg.SECCESSFUL_SUBSCRIPTION_PURCHASE.text, state, States.MENU, OPEN_MENU, GIFT_MESSAGE_EFFECT_ID
         )
-        return
-    
-    await send_messgae_waiting_prediction(message)
 
     product = await data_services.get_product(tran_dto.product_str_id)
     category = product["category"]
+    
     gen_result = await predictor.generate_prediction(tran_dto.user_id, tran_dto.product_str_id, **kwargs)
     if not gen_result["success"]:
-        raise RuntimeError()
+        LOG.error(f"Predictor failed for {tran_dto.product_str_id}")
+        raise RuntimeError("Generation failed")
     
     pred_dto = PredictionDTO(
         tran_dto.user_id, 
@@ -272,64 +270,97 @@ async def handle_user_request(
         gen_result["category"],
         gen_result["prediction"],
         gen_result["success"],
-        gen_result["cards"],
-        gen_result["with_pdf"]
+        ",".join(card[1] for card in gen_result["cards"]),
+        gen_result["pdf"]
     )
+    
     tran_id, pred_id = await data_services.handle_purchase(tran_dto, pred_dto)
     
-    if category == "microtransaction":
-        pdf_queue.put((
-            pred_id,
-            f"{tran_dto.user_id}_{tran_id}_{pred_id}",
-            scheduler,
-            send_prediction,
-            [message, state, pred_id],
-            failed_send_prediction,
-            [message, state, tran_id]
+    if category == CAT_MICROTRANSACTION:
+        refund = partial(refund_payment_by_charge_id, message.bot, message.chat.id, tran_dto.token, data_services)
+        filename = f"{message.from_user.username}_{product['name'].replace(' ', '_')}_{pred_dto.prediction_date}_{tran_id}_{pred_id}"
+        
+        await pdf_queue.put((
+            pred_id, filename, scheduler, send_prediction,
+            [message, state, States.MENU, OPEN_MENU],
+            failed_send_prediction, [message, state, refund]
         ))
-    elif category in ("free_service", "subscription_service"):
-        await send_service(message, state, pred_id)
+        LOG.info(f"Microtransaction queued for PDF: {pred_id}")
+    elif category in (CAT_FREE_SERVICE, CAT_SUB_SERVICE):
+        prediction = await data_services.get_prediction_by_id(pred_id)
+        if DEBUG:
+            wait_time = DEBUG_WAIT
+        else:
+            wait_time = random.randint(product["min_generate_seconds"], product["max_generate_seconds"])
+        create_delayed_message(
+            scheduler, send_service, timedelta(seconds=wait_time),
+            [message, state, prediction, get_service_mess_kb(pred_id, 1)]
+        )
+        LOG.info(f"Service message scheduled: {pred_id}")
     else:
-        LOG.error(f"Unknown str_id: {tran_dto.product_str_id} - {category}")
-        raise TypeError()
+        LOG.error(f"Invalid product category: {category}")
+        raise TypeError("Unknown category")
 
 
-async def send_messgae_waiting_prediction(message: Message) -> Message:
-    return await send_message(
-        message,
-        Msg.WAITING_FOR_PREDICTION.text    
-    )
+async def send_waiting_message(message: Message, state: FSMContext, msg: str) -> Message:
+    return await send_message(message, msg, state, States.WAITING_PREDICTION)
 
 
-async def send_prediction(message: Message, state: FSMContext, prediction_id: int, path_to_pdf: str):
-    LOG.warning("send_prediction")
+@MENU_ROUTER.callback_query(ServiceMessageData.filter())
+async def update_service_message(callback: CallbackQuery, callback_data: ServiceMessageData, data_services: DataServices) -> None:
+    await callback.answer("")
+    try:
+        prediction_record = await data_services.get_prediction_by_id(int(callback_data.prediction_id))
+        pred_data = json.loads(prediction_record["prediction"]) 
 
+        all_steps = int(pred_data["steps"])
+        current = int(callback_data.current_step)
+        next_step = current + (1 if bool(int(callback_data.next)) else -1)
+        next_step = max(1, min(next_step, all_steps))
 
-async def send_service(message: Message, state: FSMContext, prediction_id: int):
-    LOG.warning("send_service")
+        if not bool(int(pred_data["full"])) and bool(int(callback_data.next)) and current == all_steps:
+            msg_text = Msg.PROMOTION_SUBSCRIPTION.text
+        elif next_step != current:
+            msg_text = Msg.SERVICE.format(
+                title=pred_data.get("title", "Прогноз"),
+                date=datetime.now().date(),
+                topic=pred_data.get(f"topic_{next_step}"),
+                prediction=pred_data.get(f"prediction_{next_step}")
+            )
+        else:
+            return
+
+        await callback.message.edit_text(
+            text=msg_text,
+            reply_markup=get_service_mess_kb(prediction_record["id"], next_step),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        LOG.error(f"Service message update failed: {e}")
 
 
 #===============================================================================================================================================
 # fail handlers
-async def failed_send_prediction(message: Message, state: FSMContext, refund_method):
-    LOG.info(f"Prediction failed")
+async def failed_send_prediction(message: Message, state: FSMContext, refund_method: Any) -> Message:
+    LOG.error(f"Handling prediction failure for user {message.chat.id}")
     if refund_method:
         await refund_method()
-    await send_message(
-        message,
-        Msg.FAILED_PREDICTION_REFUND.text,
-        state,
-        States.MENU,
-        OPEN_MENU
+    return await send_message(message, Msg.FAILED_PREDICTION_REFUND.text, state, States.MENU, OPEN_MENU)
+
+
+@MENU_ROUTER.callback_query(
+    or_f(
+        and_f(F.data == CANCEL_PAY_CALLBACK_DATA, States.CONFIRM_PAYMENT),
+        and_f(F.data == CANCEL_CALLBACK_DATA, States.SAVE_REQUEST_DATA)
     )
-
-
-@MENU_ROUTER.callback_query(F.data == PAY_CALLBACK_DATA, States.CONFIRM_PAYMENT)
-@MENU_ROUTER.message(F.data == CANCEL_CALLBACK_DATA, States.SAVE_REQUEST_DATA)
+)
 async def payment_cancel(event: CallbackQuery | Message, state: FSMContext, data_services: DataServices) -> Message:
-    LOG.info("Prediction canceled")
+    LOG.info(f"Operation cancelled by user {event.from_user.id}")
     message = event if isinstance(event, Message) else event.message
-    await message.answer("")
-    await message.message.delete()
+    
+    if isinstance(event, CallbackQuery):
+        await event.answer("")
+    
+    await message.delete()
     await state.set_state(States.SEND_INVOICE)
     return await send_main_menu(message, state, data_services)

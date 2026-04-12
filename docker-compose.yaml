@@ -3,6 +3,8 @@ services:
     image: postgres:latest
     container_name: postgres-lumia
     restart: unless-stopped
+    environment:
+      - TZ=Europe/Minsk
     env_file:
       - .docker.env
     ports:
@@ -38,6 +40,8 @@ services:
   bot:
     build: .
     container_name: lumia-guide-tg
+    dns:
+      - 8.8.8.8
     restart: always
     depends_on:
       postgres:

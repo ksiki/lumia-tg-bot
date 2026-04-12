@@ -14,6 +14,6 @@ class States(StatesGroup):
 
     MENU = State()
     CONFIRM_PAYMENT = State()
-    REQUEST_DATA = State
+    REQUEST_DATA = State()
     SAVE_REQUEST_DATA = State()
     WAITING_PREDICTION = State()

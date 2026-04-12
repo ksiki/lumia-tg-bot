@@ -323,7 +323,9 @@ returns table (
     description varchar(200),
     category varchar(50),
     price_stars smallint,
-    is_discountable boolean
+    is_discountable boolean,
+	min_generate_seconds smallint,
+	max_generate_seconds smallint
 )
 language plpgsql
 security definer 
@@ -331,7 +333,16 @@ set search_path = api, dwh, pg_temp
 as $$
 begin
     return query
-    select dp.id, dp.str_id, dp.name, dp.description, dp.category, dp.price_stars, dp.is_discountable
+    select 
+		dp.id, 
+		dp.str_id, 
+		dp.name, 
+		dp.description, 
+		dp.category, 
+		dp.price_stars, 
+		dp.is_discountable,
+		dp.min_generate_seconds,
+		dp.max_generate_seconds
     from dwh.d_product dp
     where dp.str_id = p_str_id;
 end;
@@ -345,7 +356,9 @@ returns table (
     description varchar(200),
     category varchar(50),
     price_stars smallint,
-    is_discountable boolean
+    is_discountable boolean,
+	min_generate_seconds smallint,
+	max_generate_seconds smallint
 )
 language plpgsql
 security definer 
@@ -353,7 +366,16 @@ set search_path = api, dwh, pg_temp
 as $$
 begin
     return query
-    select dp.id, dp.str_id, dp.name, dp.description, dp.category, dp.price_stars, dp.is_discountable
+    select 
+		dp.id, 
+		dp.str_id, 
+		dp.name, 
+		dp.description, 
+		dp.category, 
+		dp.price_stars, 
+		dp.is_discountable,
+		dp.min_generate_seconds,
+		dp.max_generate_seconds
     from dwh.d_product dp;
 end;
 $$;
@@ -574,7 +596,7 @@ create or replace procedure api.add_prediction(
 	p_user_id bigint,
 	p_date_prediction date,
 	p_transaction_id bigint,
-	p_type_id smallint,
+	p_type_str_id varchar(100),
 	p_category varchar(50),
 	p_prediction jsonb,
 	p_success bool,
@@ -589,12 +611,15 @@ as $$
 declare
 	v_user_last_version_id bigint;
 	v_date_id integer;
+	v_type_id smallint;
 begin
 	v_user_last_version_id := api.get_last_user_version_id(p_user_id);
 	v_date_id := api.get_date_id(p_date_prediction);
+	v_type_id := api.get_product_id_by_str_id(p_type_str_id);
 
 	if v_user_last_version_id is null 
 		or v_date_id is null
+		or v_type_id is null
 	then
 		return;
 	end if;
@@ -614,7 +639,7 @@ begin
 		v_user_last_version_id,
 		v_date_id,
 		p_transaction_id,
-		p_type_id,
+		v_type_id,
 		p_category,
 		p_prediction,
 		p_success,

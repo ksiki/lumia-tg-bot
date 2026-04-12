@@ -17,11 +17,11 @@ CANCEL: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
 )
 
 
-PAY_CALLBACK_DATA: Final[str] = "payment_cancel"
+CANCEL_PAY_CALLBACK_DATA: Final[str] = "payment_cancel"
 PAY: Final[InlineKeyboardMarkup] = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text=Buttons.PAY.text, pay=True)],
-        [InlineKeyboardButton(text=Buttons.CANCEL.text, callback_data=PAY_CALLBACK_DATA)]
+        [InlineKeyboardButton(text=Buttons.CANCEL.text, callback_data=CANCEL_PAY_CALLBACK_DATA)]
     ]
 )
 
@@ -76,3 +76,26 @@ async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboa
 
     builder.adjust(1)
     return builder.as_markup()
+
+
+class ServiceMessageData(CallbackData, prefix="prod"):
+    prediction_id: int
+    current_step: int
+    next: int
+
+
+def get_service_mess_kb(prediction_id: int, current_step: int) -> InlineKeyboardMarkup:
+    next_callback = ServiceMessageData(
+        prediction_id=prediction_id,
+        current_step=current_step,
+        next=1).pack()
+    back_callback = ServiceMessageData(
+        prediction_id=prediction_id,
+        current_step=current_step,
+        next=0).pack()
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=Buttons.BACK.text, callback_data=back_callback), InlineKeyboardButton(text=Buttons.NEXT.text, callback_data=next_callback)],
+            [InlineKeyboardButton(text=Buttons.OPEN_MENU.text, callback_data=OPEN_MENU_CALLBACK_DATA)]
+        ]
+    )

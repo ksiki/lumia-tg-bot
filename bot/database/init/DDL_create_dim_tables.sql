@@ -51,8 +51,12 @@ create table if not exists dwh.d_product (
     category varchar(50),               
     price_stars smallint not null,  
     is_discountable boolean default false,
+    min_generate_seconds smallint not null default 0,
+    max_generate_seconds smallint not null default 1,
     constraint d_product_pk primary key (id),
     constraint d_product_str_id_unq unique (str_id),
     constraint d_product_category_check check (category in ('microtransaction', 'subscription', 'free_service', 'subscription_service')),
-    constraint d_product_price_stars_check check (price_stars >= 0)
+    constraint d_product_price_stars_check check (price_stars >= 0),
+    constraint d_product_price_min_generate_seconds_check check (min_generate_seconds >= 0),
+    constraint d_product_price_max_generate_seconds_check check (max_generate_seconds >= 1)
 );

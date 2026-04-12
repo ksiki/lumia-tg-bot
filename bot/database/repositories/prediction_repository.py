@@ -11,7 +11,7 @@ class PredictionRepository(BaseRepository):
         super().__init__(pool)
 
     async def add_prediction(self, prediction: PredictionDTO, connection = None) -> int:
-        query = "call api.add_prediction($1, $2, $3, $4, $5, $6, $7, $8, $9)"
+        query = "call api.add_prediction($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
 
         conn = connection if connection else self._pool
         prediction_id = await conn.fetchval(
@@ -24,7 +24,8 @@ class PredictionRepository(BaseRepository):
             json.dumps(prediction.prediction, ensure_ascii=False),
             prediction.success,
             prediction.cards,
-            prediction.with_pdf
+            prediction.with_pdf,
+            None
         )
         return prediction_id
 

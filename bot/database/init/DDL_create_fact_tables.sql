@@ -6,7 +6,7 @@ create table if not exists dwh.f_transaction (
     time time not null default now()::time,
     stars_price_original integer not null,
     stars_price_actual integer not null,
-    token text not null,
+    token text,
     is_subscription_active boolean,
     status varchar(6) not null default 'paid',
     constraint f_transaction_pk primary key (id),

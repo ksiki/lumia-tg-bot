@@ -1,7 +1,8 @@
 start_acquaintance: Начать знакомство!
 girl: Девушка
 man: Парень
-forth: Далее!
+next: Далее
+back: Назад
 activate: Активировать 🔥
 again: Заново
 product_batton_with_price: |
@@ -9,5 +10,5 @@ product_batton_with_price: |
 product_batton_without_price: |
   {text} 
 pay: Оплатить ⭐️
-cancel: Отмена  ❌
+cancel: Отмена
 open_menu: Перейти в меню

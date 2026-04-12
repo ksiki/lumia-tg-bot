@@ -1,5 +1,8 @@
-# databse
+# database
 postgres_data
+
+#user prediction
+bot/assets/predictions
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

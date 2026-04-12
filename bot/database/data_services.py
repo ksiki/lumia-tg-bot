@@ -26,7 +26,6 @@ class DataServices:
         self.__products_rep = ProductsRepository(self.__pool)
         self.__calendar_rep = CalendarRepository(self.__pool)        
 
-
 #===============================================================================================================================================
 # calendar
     async def get_week(self, fount_date: date) -> Record | None:
