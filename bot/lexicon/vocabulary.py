@@ -1,6 +1,6 @@
 from enum import Enum
 from lexicon.lexicon_logic import LexiconCore
-from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS
+from utils.yaml_loader import MESSAGES, PROMPTS, BUTTONS, ADMIN_MESSAGES
 
 
 class Msg(LexiconCore, str, Enum):         
@@ -39,6 +39,7 @@ class Msg(LexiconCore, str, Enum):
     PREDICTION = "prediction"
     SERVICE = "service"
     PROMOTION_SUBSCRIPTION = "promotion_subscription"
+    PREMIUM_EXPIRED_SHORT = "premium_expired_short"
     SERVICE_HAS_ALREADY_BEEN_USED = "service_has_already_been_used"
 
 class Buttons(LexiconCore, str, Enum):
@@ -75,3 +76,16 @@ class Prompts(LexiconCore, str, Enum):
     FREE_HOROSCOPE = "free_horoscope"
     PREMIUM_HOROSCOPE = "premium_horoscope"
     
+class AdminMsg(LexiconCore, str, Enum):         
+    __lexicon_data: dict[str, str] = ADMIN_MESSAGES
+
+    USER_INFO = "user_info"
+    SUCCESS_REFUND_TOKEN = "success_refund_token"
+    FAILED_REFUND_TOKEN = "failed_refund_token" 
+    SUCCESS_REFUND_TRAN_ID = "success_refund_tran_id"
+    FAILED_REFUND_TRAN_ID = "failed_refund_tran_id"
+    SOME_ERROR = "some_error"
+    SUCCES = "success"
+    SUBS_INFO = "subs_info"
+    NOT_FOUND_SUB = "not_found_sub"
+    INFO = "info"

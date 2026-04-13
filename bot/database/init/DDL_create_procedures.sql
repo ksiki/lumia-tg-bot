@@ -127,10 +127,12 @@ create or replace function api.get_active_subscriptions(
     p_user_id bigint
 )
 returns table (
+	transaction_id bigint,
     user_id bigint,
     start_date date,
     end_date date,
-    created_at_time time
+    created_at_time time,
+	status varchar(15)
 )
 language plpgsql
 security definer 
@@ -139,10 +141,12 @@ as $$
 begin
     return query
     select 
+		fs.transaction_id,
         du.user_id,
         sd.date as start_date,
         ed.date as end_date,
-        fs.created_at_time
+        fs.created_at_time,
+		fs.status
     from dwh.f_subscription fs
     join dwh.d_user du on du.id = fs.user_id
     join dwh.d_calendar sd on fs.start_date_id = sd.id

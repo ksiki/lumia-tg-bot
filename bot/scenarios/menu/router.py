@@ -85,6 +85,14 @@ async def send_main_menu(event: Message | CallbackQuery, state: FSMContext, data
         await get_menu_kb(data_services, message.chat.id)
     )
 
+
+async def update_main_mune(callback: CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
+    await send_main_menu(callback, state, data_services)
+    return await send_message(
+        callback.message,
+        Msg.PREMIUM_EXPIRED_SHORT.text
+    )
+
 #===============================================================================================================================================
 # request data from user
 @MENU_ROUTER.callback_query(ProductCallback.filter(), States.CHOICE)
@@ -98,6 +106,10 @@ async def request_data(
     data_services: DataServices
 ) -> Message:
     await callback.message.delete()
+
+    if bool(callback_data.is_subscriber) and not await data_services.is_user_has_active_subscription(callback.message.chat.id):
+        return await update_main_mune(callback, state, data_services)
+        
     
     product_id = callback_data.product_id
     category = callback_data.category

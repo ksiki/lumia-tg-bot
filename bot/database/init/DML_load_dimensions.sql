@@ -30,14 +30,14 @@ on conflict (id) do nothing;
 insert into dwh.d_product (str_id, name, description, category, price_stars, period, is_discountable, min_generate_seconds, max_generate_seconds)
 values 
     ('monthly_subscription', 'Premium', 'Premium подписка на месяц', 'subscription', 100, 'month', false, 0, 1),
-    ('short_horoscope_for_the_day', 'Гороскоп на день', 'Краткий прогноз главных событий', 'free_service', 0, 'day', false, 300, 600),
-    ('one_card_of_the_day', 'Карта дня', 'Твой персональный символ и совет', 'free_service', 0, 'day', false, 300, 600),
-    ('full_horoscope_for_the_day', 'Гороскоп на день', 'Детальный разбор всех сфер жизни', 'subscription_service', 0, 'day', false, 300, 600),
-    ('three_tarot_cards_for_the_day', 'Три карты дня', 'Прошлое, настоящее и будущее', 'subscription_service', 0, 'day', false, 300, 600),
-    ('lunar_horoscope_for_the_week', 'Лунный гороскоп на неделю', 'Влияние фаз Луны на твою неделю', 'subscription_service', 0, 'week', false, 300, 600),
-    ('one_time_deep_seven_card_hand', 'Разбор ситуации (7 карт)', 'Полный разбор любой ситуации (7 карт)', 'microtransaction', 150, 'no', true, 1200, 1800),
-    ('fate_matrix', 'Матрица судьбы', 'Расшифровка твоего пути по дате рождения', 'microtransaction', 150, 'no', true, 1200, 1800),
-    ('human_design', 'Дизайн человека', 'Твоя уникальная генетическая стратегия', 'microtransaction', 150, 'no', true, 1200, 1800),
-    ('deep_compatibility_analysis_synastry', 'Совместимость', 'Анализ союза по натальным картам', 'microtransaction', 150, 'no', true, 1200, 1800),
-    ('test_of_loyalty', 'Проверка на верность', 'Скрытые мотивы и честность партнера', 'microtransaction', 150, 'no', true, 1200, 1800)
+    ('short_horoscope_for_the_day', 'Гороскоп на день', 'Краткий прогноз главных событий', 'free_service', 0, 'day', false, 900, 1800),
+    ('one_card_of_the_day', 'Карта дня', 'Твой персональный символ и совет', 'free_service', 0, 'day', false, 900, 1800),
+    ('full_horoscope_for_the_day', 'Гороскоп на день', 'Детальный разбор всех сфер жизни', 'subscription_service', 0, 'day', false, 900, 1800),
+    ('three_tarot_cards_for_the_day', 'Три карты дня', 'Прошлое, настоящее и будущее', 'subscription_service', 0, 'day', false, 900, 1800),
+    ('lunar_horoscope_for_the_week', 'Лунный гороскоп на неделю', 'Влияние фаз Луны на твою неделю', 'subscription_service', 0, 'week', false, 900, 1800),
+    ('one_time_deep_seven_card_hand', 'Разбор ситуации (7 карт)', 'Полный разбор любой ситуации (7 карт)', 'microtransaction', 150, 'no', true, 2400, 3600),
+    ('fate_matrix', 'Матрица судьбы', 'Расшифровка твоего пути по дате рождения', 'microtransaction', 150, 'no', true, 2400, 3600),
+    ('human_design', 'Дизайн человека', 'Твоя уникальная генетическая стратегия', 'microtransaction', 150, 'no', true, 2400, 3600),
+    ('deep_compatibility_analysis_synastry', 'Совместимость', 'Анализ союза по натальным картам', 'microtransaction', 150, 'no', true, 2400, 3600),
+    ('test_of_loyalty', 'Проверка на верность', 'Скрытые мотивы и честность партнера', 'microtransaction', 150, 'no', true, 2400, 3600)
 on conflict (str_id) do nothing;

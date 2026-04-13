@@ -3,7 +3,7 @@ from typing import Final
 from predictions.predictor import Predictor
 
 from create_bot import BOT, DISPATCHER, DATABASE, SCHEDULER
-from scenarios import START_ROUTER, MENU_ROUTER, USER_SETTINGS_ROUTER
+from scenarios import START_ROUTER, MENU_ROUTER, USER_SETTINGS_ROUTER, ADMIN_ROUTER
 from utils.pdf_generator import pdf_worker, PDF_QUEUE
 from predictions.predictor import Predictor
 from database.data_services import DataServices
@@ -17,7 +17,7 @@ async def main() -> None:
     SCHEDULER.start()
     asyncio.create_task(pdf_worker(DATA_SERVICES))
 
-    DISPATCHER.include_routers(MENU_ROUTER, USER_SETTINGS_ROUTER, START_ROUTER)
+    DISPATCHER.include_routers(ADMIN_ROUTER, MENU_ROUTER, USER_SETTINGS_ROUTER, START_ROUTER)
     await BOT.delete_webhook(drop_pending_updates=True)
     await DISPATCHER.start_polling(
         BOT, 

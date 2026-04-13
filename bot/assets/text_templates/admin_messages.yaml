@@ -1,0 +1,61 @@
+user_info: |
+  user_id: {user_id}
+  last_version: {last_version}
+  name: {name}
+  sex: {sex}
+  birthday: {birthday}
+  bith_time: {birth_time}
+  birth_city: {birth_city}
+  residence_city: {residence_city}
+  timezone: {timezone}
+  registration_date: {registration_date}
+  has_active_subscription: {has_active_subscription}
+
+some_error: |
+  Какая-то ошибка.
+  Запрос: {command}
+  Error: {error}
+
+success_refund_token: |
+  Успешный возвтрат юзеру с id={user_id}: token: {token}
+
+failed_refund_token: |
+  Неуспешный возвтрат юзеру с id: {user_id}, token: {token}
+
+success_refund_tran_id: |
+  Успешный возвтрат юзеру с id={user_id}: tran_id: {tran_id}
+
+failed_refund_tran_id: |
+  Неуспешный возвтрат юзеру с id: {user_id}, tran_id: {tran_id}
+
+success: |
+  Успех
+
+subs_info: |
+  user_id: {user_id}
+
+  Текущая:
+  tran_id: {a_tran_id}
+  start: {a_start_date}
+  end: {a_end_date}
+  create_at_time: {a_create_at_time}
+  status: {a_status}
+
+
+  Последняя:
+  tran_id: {l_tran_id}
+  start: {l_start_date}
+  end: {l_end_date}
+  create_at_time: {l_create_at_time}
+  status: {l_status}
+
+not_found_sub: |
+  У пользователя {user_id} нет активных или будуших подписок.
+
+info: |
+  user "user_id"
+  usub "user_id"
+  giftsub "user_id" "days"
+  token "tran_id"
+  idrefund "tran_is"
+  tokenrefund "token"

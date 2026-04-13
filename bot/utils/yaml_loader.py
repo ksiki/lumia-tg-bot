@@ -8,6 +8,7 @@ from typing import Any, Final
 TEMPLATES_DIR: Final[Path] = Path(__file__).resolve().parent.parent / "assets" / "text_templates"
 PROMPTS_PATH: Final[Path] = TEMPLATES_DIR / "prompts.yaml"
 MESSAGES_PATH: Final[Path] = TEMPLATES_DIR / "messages.yaml"
+ADMIN_MESSAGES_PATH: Final[Path] = TEMPLATES_DIR / "admin_messages.yaml"
 BUTTONS_PATH: Final[Path] = TEMPLATES_DIR / "buttons.yaml"
 
 LOG: Final[Logger] = logging.getLogger(__name__)
@@ -39,4 +40,5 @@ def load_yaml(file_path: Path) -> dict[str, Any]:
 
 PROMPTS: Final[dict[str, Any]] = load_yaml(PROMPTS_PATH)
 MESSAGES: Final[dict[str, Any]] = load_yaml(MESSAGES_PATH)
+ADMIN_MESSAGES: Final[dict[str, Any]] = load_yaml(ADMIN_MESSAGES_PATH)
 BUTTONS: Final[dict[str, Any]] = load_yaml(BUTTONS_PATH)

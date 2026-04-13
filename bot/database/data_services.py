@@ -158,6 +158,8 @@ class DataServices:
         response = await self.__subscription_rep.get_active_subscription(user_id)
         return response
 
+    async def get_last_subscription(self, user_id: int) -> Record | None:
+        return await self.__subscription_rep.get_last_subscription(user_id)
 
     async def add_new_subscription(self, subscription_dto: SubscriptionDTO) -> None:
         new_sub_dtp = await self.__handle_subscription(subscription_dto)

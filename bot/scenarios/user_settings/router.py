@@ -28,6 +28,8 @@ USER_SETTINGS_ROUTER.message.middleware(ActionLoggingMiddleware())
 USER_SETTINGS_ROUTER.message.middleware(TypingActionMiddleware())
 LOG: Final[Logger] = logging.getLogger(__name__)
 
+NO_SUBSCRIPTION: Final[str] = "<b>Подписка отсутствует</b>"
+
 
 #===============================================================================================================================================
 # all settings
@@ -40,9 +42,23 @@ async def send_setting(event: Message | CallbackQuery, state: FSMContext, data_s
         await event.answer("")
 
     message = event if isinstance(event, Message) else event.message
+
+    user_id = message.chat.id
+    current_sub = await data_services.get_active_subscription(user_id)
+    last_sub = await data_services.get_last_subscription(user_id)
+    msg = None
+    if current_sub and last_sub:
+        msg = Msg.SETTINGS.format(
+            date=f"<b>{current_sub["start_date"]} - {last_sub["end_date"]}</b>"
+        )
+    else:
+        msg = Msg.SETTINGS.format(
+            date=NO_SUBSCRIPTION
+        )
+
     return await send_message(
         message,
-        Msg.SETTINGS.text,
+        msg,
         state,
         States.SETTINGS,
         SETTINGS
