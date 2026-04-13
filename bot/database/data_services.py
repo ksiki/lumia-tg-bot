@@ -4,8 +4,24 @@ from logging import Logger
 from typing import Final
 from asyncpg import Record
 
-from database.DTO import UserDTO, GetPredictionDTO, PredictionDTO, ActionLogDTO, SubscriptionDTO, TransactionDTO
-from database.repositories import UserRepository, TransactionRepository, SubscriptionRepository, ActionLogRepository, PredictionRepository, ProductsRepository, CalendarRepository
+from database.DTO import (
+    UserDTO, 
+    GetPredictionDTO, 
+    PredictionDTO, 
+    ActionLogDTO, 
+    SubscriptionDTO, 
+    TransactionDTO
+)
+from database.repositories import (
+    UserRepository, 
+    TransactionRepository, 
+    SubscriptionRepository, 
+    ActionLogRepository, 
+    PredictionRepository, 
+    ProductsRepository, 
+    CalendarRepository,
+    PromotionRepository
+)
 from common.log_errors_decorator import log_errors
 from common.log_all_methods_decorator import log_all_methods
 from common.constants import MOUNTLY_SUBSCRIPTION_LENGTH
@@ -24,13 +40,19 @@ class DataServices:
         self.__action_log_rep = ActionLogRepository(self.__pool)
         self.__prediction_rep = PredictionRepository(self.__pool)
         self.__products_rep = ProductsRepository(self.__pool)
-        self.__calendar_rep = CalendarRepository(self.__pool)        
+        self.__calendar_rep = CalendarRepository(self.__pool)
+        self.__promotion_rep = PromotionRepository(self.__pool)        
 
 #===============================================================================================================================================
 # calendar
     async def get_week(self, fount_date: date) -> Record | None:
         response = await self.__calendar_rep.get_week(fount_date)
         return response
+
+#===============================================================================================================================================
+# promotion
+    async def get_text_promotion(self) -> str:
+        return await self.__promotion_rep.get_text_promotion()
 
 #===============================================================================================================================================
 # user
@@ -50,7 +72,7 @@ class DataServices:
         await self.__user_rep.add_new_user(user_dto)
 
     async def update_user_date(self, user_dto: UserDTO) -> None:
-        await self.__user_rep.add_new_user(user_dto)
+        await self.__user_rep.update_user(user_dto)
 
 #===============================================================================================================================================
 # product
@@ -74,6 +96,9 @@ class DataServices:
     
     async def get_prediction_by_id(self, prediction_id: int) -> Record | None:
         return await self.__prediction_rep.get_prediction_by_id(prediction_id)
+
+    async def is_having_prediction(self, found_prediction: GetPredictionDTO) -> bool:
+        return await self.__prediction_rep.is_having_prediction(found_prediction)
 
     async def add_new_prediction(self, prediction_dto: PredictionDTO) -> int:
         return await self.__prediction_rep.add_prediction(prediction_dto)

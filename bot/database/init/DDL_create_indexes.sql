@@ -4,9 +4,12 @@ where is_current = true;
 create index idx_f_transaction_user_id on dwh.f_transaction (user_id);
 create index idx_f_subscription_user_id on dwh.f_subscription (user_id);
 create index idx_f_prediction_user_id on dwh.f_prediction (user_id);
-create index idx_f_user_action_log_user_id on dwh.f_user_action_log (user_id);
 
 create index idx_f_subscription_end_date on dwh.f_subscription (end_date_id);
 
 create index idx_d_product_id on dwh.d_product (id);
 create index idx_d_product_str_id on dwh.d_product (str_id);
+
+create index edx_d_promotion_id on dwh.d_promotion (id);
+create index edx_d_created_at_date_id on dwh.d_promotion (created_at_date_id);
+create index edx_d_promotion_start_end_date_id on dwh.d_promotion (start_date_id, end_date_id);

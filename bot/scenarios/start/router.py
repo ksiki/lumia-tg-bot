@@ -11,14 +11,13 @@ from aiogram.fsm.context import FSMContext
 from database.DTO import SubscriptionDTO, UserDTO
 from database.data_services import DataServices
 from lexicon.vocabulary import Buttons, Msg
-from middleware.action_logging_middleware import ActionLoggingMiddleware
-from middleware.text_message import TypingActionMiddleware
+from middleware import ActionLoggingMiddleware, TypingActionMiddleware
 from scenarios.fsm_states import States
 from utils.validator import is_valid_date, is_valid_time, is_valid_city
 from utils.converter import str_to_date, str_to_time
 from scenarios.message_sendler import send_message
 from scenarios.menu.router import send_main_menu
-from common.constants import GIFT_MESSAGE_EFFECT_ID
+from common.constants import FIRE_MESSAGE_EFFECT_ID
 from scenarios.start.keyboard import (
     BEGIN_SURVEY, 
     SEX_QUESTION, 
@@ -54,7 +53,7 @@ async def start(message: Message, state: FSMContext, data_services: DataServices
     if is_register:
         LOG.info(f"Registered user {user_id} returned")
         return await send_main_menu(message, state, data_services)
-    
+
     LOG.info(f"New user {user_id} started survey")
     return await send_message(
         message,
@@ -193,11 +192,11 @@ async def activate_gift(message: Message, state: FSMContext, data_services: Data
         now = datetime.now()
         sub_dto = SubscriptionDTO(
             user_id=user_id,
-            product_id=None,
+            transaction_id=None,
             start_date=now.date(),
             end_date=now.date() + timedelta(days=TRIAL_SUBSCRIPTION_DAYS),
-            start_time=now.time(),
-            type=SUBSCRIPTION_TYPE_TRIAL
+            created_at_time=now.time(),
+            status=SUBSCRIPTION_TYPE_TRIAL
         )
         await data_services.add_new_subscription(sub_dto)
         LOG.info(f"Trial activated for {user_id}")
@@ -208,6 +207,6 @@ async def activate_gift(message: Message, state: FSMContext, data_services: Data
             message,
             Msg.PREMIUM_GIFT_THREE_DAYS.text,
             reply_markup=ACTIVATING_GIFT,
-            message_effect_id=GIFT_MESSAGE_EFFECT_ID
+            message_effect_id=FIRE_MESSAGE_EFFECT_ID
         )
     return response

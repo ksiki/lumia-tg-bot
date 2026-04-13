@@ -48,3 +48,14 @@ class PredictionRepository(BaseRepository):
             prediction_id
         )
         return prediction
+
+    async def is_having_prediction(self, found_prediction: GetPredictionDTO) -> bool:
+        query = "select * from api.is_having_prediction($1, $2, $3)"
+
+        result = await self._pool.fetchval(
+            query,
+            found_prediction.user_id, 
+            found_prediction.prediction_date, 
+            found_prediction.type
+        )
+        return result

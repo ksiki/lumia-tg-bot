@@ -13,4 +13,4 @@ class UserDTO:
     birthday_city_timezone: str
     residence_city: str
     residence_city_timezone: str
-    registration_date: date
+    registration_date: date | None

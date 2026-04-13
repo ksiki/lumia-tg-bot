@@ -21,6 +21,9 @@ class Msg(LexiconCore, str, Enum):
     NOT_VALID_WHEN_YOUR_BIRTHDAY_QUESTION = "not_valid_when_your_birthday_question"
 
     MENU_MESSAGE = "menu_message"
+    SETTINGS = "settings"
+
+    FILED_USER_UPDATE = "filed_user_update"
     FAILED_ANSWER_INVOICE = "failed_answer_invoice"
     FAILED_PREDICTION_REFUND = "failed_prediction_refund"
     SECCESSFUL_SUBSCRIPTION_PURCHASE = "successful_subscription_purchase"
@@ -36,6 +39,7 @@ class Msg(LexiconCore, str, Enum):
     PREDICTION = "prediction"
     SERVICE = "service"
     PROMOTION_SUBSCRIPTION = "promotion_subscription"
+    SERVICE_HAS_ALREADY_BEEN_USED = "service_has_already_been_used"
 
 class Buttons(LexiconCore, str, Enum):
     __lexicon_data: dict[str, str] = BUTTONS
@@ -52,6 +56,8 @@ class Buttons(LexiconCore, str, Enum):
     PAY = "pay"
     CANCEL = "cancel"
     OPEN_MENU = "open_menu"
+    SETTINGS = "settings"
+    CHANGE_DATA = "change_data"
 
 
 class Prompts(LexiconCore, str, Enum):

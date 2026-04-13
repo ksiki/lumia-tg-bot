@@ -5,3 +5,4 @@ from .action_log_repository import ActionLogRepository
 from .prediction_repository import PredictionRepository
 from .products_repository import ProductsRepository
 from .calendar_repository import CalendarRepository
+from .promotion_repository import PromotionRepository

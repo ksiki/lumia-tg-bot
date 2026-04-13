@@ -50,13 +50,30 @@ create table if not exists dwh.d_product (
     description varchar(200) not null,
     category varchar(50),               
     price_stars smallint not null,  
+    period varchar(5) not null,
     is_discountable boolean default false,
     min_generate_seconds smallint not null default 0,
     max_generate_seconds smallint not null default 1,
     constraint d_product_pk primary key (id),
     constraint d_product_str_id_unq unique (str_id),
     constraint d_product_category_check check (category in ('microtransaction', 'subscription', 'free_service', 'subscription_service')),
+    constraint d_product_preiod_check check (period in ('day', 'week', 'month', 'no')),
     constraint d_product_price_stars_check check (price_stars >= 0),
     constraint d_product_price_min_generate_seconds_check check (min_generate_seconds >= 0),
     constraint d_product_price_max_generate_seconds_check check (max_generate_seconds >= 1)
+);
+
+create table if not exists dwh.d_promotion (
+	id bigserial not null,
+	start_date_id integer not null,
+	end_date_id integer not null,
+	text text not null,
+	cost integer not null,
+	currency varchar(15) not null,
+	created_at_date_id integer not null,
+	constraint d_promotion_pk primary key (id),
+	constraint d_promotion_currency_check check (currency in ('STARS', 'USDT', 'TON', 'USD', 'EUR', 'BYN', 'RUB', 'KZT')),
+	foreign key (start_date_id) references dwh.d_calendar (id),
+	foreign key (end_date_id) references dwh.d_calendar (id),
+	foreign key (created_at_date_id) references dwh.d_calendar (id)
 );

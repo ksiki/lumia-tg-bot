@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from logging import Logger
+import os
 from typing import Any, Final
 
 from aiogram.types import (
@@ -62,11 +63,18 @@ async def send_prediction(
     document = FSInputFile(path_to_pdf)
     await state.set_state(new_state)
     
-    return await message.answer_document(
+    msg = await message.answer_document(
         document=document,
         caption=Msg.PREDICTION.text,
         reply_markup=reply_markup
     )
+    
+    try:
+        os.remove(path_to_pdf)
+    except Exception as e:
+        LOG.error(f"Filed remove fail: {e}")
+
+    return msg
 
 
 async def send_service(

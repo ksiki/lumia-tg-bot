@@ -14,7 +14,7 @@ async def refund_payment(bot: Bot, user_id: int, charge_id: str) -> bool:
             user_id=user_id, 
             telegram_payment_charge_id=charge_id
         )
-        LOG.inf(f"Refund successful: User {user_id}, Charge {charge_id}")
+        LOG.info(f"Refund successful: User {user_id}, Charge {charge_id}")
         return True
     except Exception as e:
         LOG.error(f"Refund execution error: {e}")

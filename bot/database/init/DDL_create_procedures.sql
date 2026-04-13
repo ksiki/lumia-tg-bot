@@ -153,6 +153,92 @@ begin
 end;
 $$;
 
+create or replace function api.get_week(
+	p_date date
+)
+returns table (
+	start_date date,
+	end_date date,
+	week_of_year smallint,
+	year smallint
+) 
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+begin
+	return query
+	select 
+		min(dc.date) as start_date,
+		max(dc.date) as end_date,
+		wy.week_of_year,
+		wy.year
+	from (
+		select 
+			dcwy.week_of_year,
+			dcwy.year
+		from dwh.d_calendar dcwy
+		where dcwy.date = $1
+	) as wy
+	join dwh.d_calendar dc using(week_of_year, year)
+	group by wy.week_of_year, wy.year;
+end;
+$$;
+
+
+create or replace function api.is_having_prediction(
+    p_user_id bigint,
+    p_date date,
+    p_type_str_id varchar(100)
+)
+returns bool 
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+declare
+	v_period varchar(5);
+	v_found_date_id integer;
+	v_found_product_id smallint;
+	v_prediction_id bigint;
+begin
+	v_found_product_id := api.get_product_id_by_str_id(p_type_str_id);
+
+	select period
+	into v_period
+	from api.get_product_by_str_id(p_type_str_id)
+	limit 1;
+
+	if v_period is null then 
+		return FALSE;
+	end if;
+
+	if v_period = 'week'
+	then 
+		select to_char(start_date, 'YYYYMMDD')::integer
+		into v_found_date_id
+		from api.get_week(p_date)
+		limit 1;
+	else
+		v_found_date_id := to_char(p_date, 'YYYYMMDD')::integer;
+	end if;
+
+	select fp.id
+	into v_prediction_id
+	from dwh.f_prediction fp
+	join dwh.d_user du on fp.user_id = du.id
+	where du.user_id = p_user_id
+		and fp.date_id = v_found_date_id
+		and fp.type_id = v_found_product_id
+	limit 1;
+
+	if v_prediction_id is null then
+		return FALSE;
+	end if;
+	return TRUE;
+end;
+$$;
+
 create or replace function api.get_predictions_by_params(
     p_user_id bigint,
     p_date date,
@@ -323,6 +409,7 @@ returns table (
     description varchar(200),
     category varchar(50),
     price_stars smallint,
+	period varchar(5),
     is_discountable boolean,
 	min_generate_seconds smallint,
 	max_generate_seconds smallint
@@ -340,11 +427,13 @@ begin
 		dp.description, 
 		dp.category, 
 		dp.price_stars, 
+		dp.period,
 		dp.is_discountable,
 		dp.min_generate_seconds,
 		dp.max_generate_seconds
     from dwh.d_product dp
-    where dp.str_id = p_str_id;
+    where dp.str_id = p_str_id
+	limit 1;
 end;
 $$;
 
@@ -377,6 +466,38 @@ begin
 		dp.min_generate_seconds,
 		dp.max_generate_seconds
     from dwh.d_product dp;
+end;
+$$;
+
+create or replace function api.get_text_promotion()
+returns text
+language plpgsql
+security definer 
+set search_path = api, dwh, pg_temp
+as $$
+declare 
+	v_text text;
+	v_current_date_id integer;
+begin
+	v_current_date_id := to_char(now()::date, 'YYYYMMDD')::integer;
+
+	select dp.text
+	into v_text
+	from dwh.d_promotion dp	
+	where v_current_date_id between dp.start_date_id and dp.end_date_id
+	order by dp.start_date_id asc
+	limit 1;
+
+	if v_text is null
+	then
+		select dp.text
+		into v_text
+		from dwh.d_promotion dp	
+		where dp.id = -1 
+		limit 1;
+	end if;  
+
+	return v_text;
 end;
 $$;
 
@@ -612,10 +733,25 @@ declare
 	v_user_last_version_id bigint;
 	v_date_id integer;
 	v_type_id smallint;
+	v_period varchar(5);
 begin
 	v_user_last_version_id := api.get_last_user_version_id(p_user_id);
-	v_date_id := api.get_date_id(p_date_prediction);
 	v_type_id := api.get_product_id_by_str_id(p_type_str_id);
+
+	select period
+	into v_period
+	from api.get_product_by_str_id(p_type_str_id)
+	limit 1;
+
+	if v_period = 'week'
+	then 
+		select to_char(start_date, 'YYYYMMDD')::integer
+		into v_date_id
+		from api.get_week(p_date_prediction)
+		limit 1;
+	else
+		v_date_id := to_char(p_date_prediction, 'YYYYMMDD')::integer;
+	end if;
 
 	if v_user_last_version_id is null 
 		or v_date_id is null

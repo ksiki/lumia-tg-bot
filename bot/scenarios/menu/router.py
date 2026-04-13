@@ -13,12 +13,11 @@ from aiogram.types import CallbackQuery, LabeledPrice, Message, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from database.DTO import TransactionDTO, PredictionDTO
+from database.DTO import TransactionDTO, PredictionDTO, GetPredictionDTO
 from predictions.predictor import Predictor
 from lexicon.vocabulary import Buttons, Msg
 from database.data_services import DataServices
-from middleware.action_logging_middleware import ActionLoggingMiddleware
-from middleware.text_message import TypingActionMiddleware
+from middleware import ActionLoggingMiddleware, TypingActionMiddleware
 from scenarios.fsm_states import States
 from scenarios.message_sendler import create_delayed_message, send_message, send_prediction, send_service
 from scenarios.stars_refunder import refund_payment_by_charge_id
@@ -27,10 +26,11 @@ from scenarios.menu.keyboard import (
     ProductCallback, get_menu_kb, 
     ServiceMessageData, get_service_mess_kb,
     PAY, CANCEL, OPEN_MENU,
-    CANCEL_PAY_CALLBACK_DATA, OPEN_MENU_CALLBACK_DATA, CANCEL_CALLBACK_DATA
+    CANCEL_PAY_CALLBACK_DATA, OPEN_MENU_CALLBACK_DATA, CANCEL_CALLBACK_DATA,
+    SETTINGS_CALLBACK_DATA
 )
-from common.constants import CURRENCY, GIFT_MESSAGE_EFFECT_ID, DEBUG_WAIT
-from config import ADMINS, DEBUG
+from common.constants import CURRENCY, FIRE_MESSAGE_EFFECT_ID, DEBUG_WAIT
+from config import ADMINS, DEBUG, DIRRECT_LINK, STARS_SHOP_LINK
 
 MENU_ROUTER: Final[Router] = Router()
 MENU_ROUTER.message.middleware(ActionLoggingMiddleware())
@@ -58,7 +58,7 @@ REQUEST_MESSAGES: Final[dict[str, str]] = {
 @MENU_ROUTER.callback_query(
     or_f(
         and_f(F.data == OPEN_MENU_CALLBACK_DATA, States.MENU),
-        and_f(F.data == CANCEL_CALLBACK_DATA, States.SAVE_REQUEST_DATA)
+        and_f(F.data == CANCEL_CALLBACK_DATA, States.REQUEST_DATA)
     )
 )
 @MENU_ROUTER.message(F.text == Buttons.ACTIVATE.text, States.MENU)
@@ -69,18 +69,25 @@ async def menu_handler(event: Message | CallbackQuery, state: FSMContext, data_s
 async def send_main_menu(event: Message | CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
     if isinstance(event, CallbackQuery):
         await event.answer("")
+
     message = event if isinstance(event, Message) else event.message
+    promotion_text = await data_services.get_text_promotion()
+    msg_text = Msg.MENU_MESSAGE.format(
+        promotion=promotion_text,
+        dirrect_link=DIRRECT_LINK,
+        stars_shop_link=STARS_SHOP_LINK
+    )
     return await send_message(
         message,
-        Msg.MENU_MESSAGE.text,
+        msg_text,
         state,
-        States.REQUEST_DATA,
+        States.CHOICE,
         await get_menu_kb(data_services, message.chat.id)
     )
 
 #===============================================================================================================================================
 # request data from user
-@MENU_ROUTER.callback_query(ProductCallback.filter(), States.REQUEST_DATA)
+@MENU_ROUTER.callback_query(ProductCallback.filter(), States.CHOICE)
 async def request_data(
     callback: CallbackQuery, 
     state: FSMContext, 
@@ -111,10 +118,19 @@ async def request_data(
             message=callback.message,
             mes_text=prompt_text,
             state=state,
-            new_state=States.SAVE_REQUEST_DATA,
+            new_state=States.REQUEST_DATA,
             reply_markup=CANCEL
         )
     
+    if await is_having_prediction_today(data_services, callback.message.chat.id, product_id):
+        return await send_message(
+            callback.message,
+            Msg.SERVICE_HAS_ALREADY_BEEN_USED.text,
+            state, 
+            States.MENU,
+            OPEN_MENU
+        )
+
     await send_waiting_message(callback.message, state, Msg.WAITING_FOR_SERVICE.text)
     try:
         now = datetime.now()
@@ -135,7 +151,7 @@ async def request_data(
         return await failed_send_prediction(callback.message, state, None)
 
 
-@MENU_ROUTER.message(F.text, States.SAVE_REQUEST_DATA)
+@MENU_ROUTER.message(F.text, States.REQUEST_DATA)
 async def save_request_data(message: Message, state: FSMContext, data_services: DataServices) -> Message:
     temp_data = await state.get_data()
     product_id = temp_data.get("product_id")
@@ -146,6 +162,15 @@ async def save_request_data(message: Message, state: FSMContext, data_services: 
     
     await state.update_data(data_for_prediction=message.text)
     await handle_product_click(message, state, data_services)
+
+
+async def is_having_prediction_today(data_services: DataServices, user_id: int, type_str: str) -> bool:
+    pred_dto = GetPredictionDTO(
+        user_id,
+        datetime.now().date(),
+        type_str
+    )
+    return await data_services.is_having_prediction(pred_dto)
 
 
 #===============================================================================================================================================
@@ -163,6 +188,11 @@ async def handle_product_click(message: Message, state: FSMContext, data_service
         prices = [LabeledPrice(label=product["name"], amount=fact_price)]
 
         await state.set_state(States.CONFIRM_PAYMENT)
+        if data['product_id'] == PROD_MONTHLY_SUB:
+            await send_message(
+                message,
+                Msg.PROMOTION_SUBSCRIPTION.text
+            )
         return await message.answer_invoice(
             title=product["name"],
             description=product["description"],
@@ -251,7 +281,11 @@ async def handle_user_request(
     if tran_dto.product_str_id == PROD_MONTHLY_SUB:
         await data_services.handle_purchase(tran_dto)
         return await send_message(
-            message, Msg.SECCESSFUL_SUBSCRIPTION_PURCHASE.text, state, States.MENU, OPEN_MENU, GIFT_MESSAGE_EFFECT_ID
+            message, 
+            Msg.SECCESSFUL_SUBSCRIPTION_PURCHASE.text, 
+            state, 
+            States.MENU, 
+            OPEN_MENU, FIRE_MESSAGE_EFFECT_ID
         )
 
     product = await data_services.get_product(tran_dto.product_str_id)
@@ -303,7 +337,12 @@ async def handle_user_request(
 
 
 async def send_waiting_message(message: Message, state: FSMContext, msg: str) -> Message:
-    return await send_message(message, msg, state, States.WAITING_PREDICTION)
+    return await send_message(
+        message, 
+        msg, 
+        state, 
+        States.WAITING_PREDICTION
+    )
 
 
 @MENU_ROUTER.callback_query(ServiceMessageData.filter())
@@ -351,7 +390,7 @@ async def failed_send_prediction(message: Message, state: FSMContext, refund_met
 @MENU_ROUTER.callback_query(
     or_f(
         and_f(F.data == CANCEL_PAY_CALLBACK_DATA, States.CONFIRM_PAYMENT),
-        and_f(F.data == CANCEL_CALLBACK_DATA, States.SAVE_REQUEST_DATA)
+        and_f(F.data == CANCEL_CALLBACK_DATA, States.REQUEST_DATA)
     )
 )
 async def payment_cancel(event: CallbackQuery | Message, state: FSMContext, data_services: DataServices) -> Message:
@@ -362,5 +401,5 @@ async def payment_cancel(event: CallbackQuery | Message, state: FSMContext, data
         await event.answer("")
     
     await message.delete()
-    await state.set_state(States.SEND_INVOICE)
+    await state.set_state(States.MENU)
     return await send_main_menu(message, state, data_services)

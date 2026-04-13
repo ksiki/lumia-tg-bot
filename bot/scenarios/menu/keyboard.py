@@ -39,7 +39,7 @@ class ProductCallback(CallbackData, prefix="prod"):
     category: str
     fact_price: int
     is_subscriber: int
-
+SETTINGS_CALLBACK_DATA = "settings"
 
 async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboardMarkup:
     products = await data_services.get_all_product()
@@ -72,6 +72,11 @@ async def get_menu_kb(data_services: DataServices, user_id: int) -> InlineKeyboa
                 fact_price=price,
                 is_subscriber=int(is_subscribed)
             )
+        )
+
+    builder.button(
+            text=Buttons.SETTINGS.text,
+            callback_data=SETTINGS_CALLBACK_DATA
         )
 
     builder.adjust(1)

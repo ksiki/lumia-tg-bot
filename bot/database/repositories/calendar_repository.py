@@ -9,22 +9,7 @@ class CalendarRepository(BaseRepository):
         super().__init__(pool)
 
     async def get_week(self, fount_date: date) -> Record | None:
-        query = """
-            select 
-                min(date) as start_date,
-                max(date) as end_date,
-                week_of_year,
-                year
-            from (
-                select 
-                    week_of_year,
-                    year
-                from dwh.d_calendar 
-                where date = $1
-            ) as week
-            join dwh.d_calendar dc using(week_of_year, year)
-            group by week_of_year, year;
-        """
+        query = """select * from api.get_week($1)"""
 
         week = await self._pool.fetchrow(query, fount_date)
         return week
