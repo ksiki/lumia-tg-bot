@@ -1,8 +1,12 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:17-alpine
     container_name: postgres-lumia
     restart: unless-stopped
+    command: >
+      -c shared_buffers=32MB
+      -c max_connections=20
+      -c work_mem=2MB
     environment:
       - TZ=Europe/Minsk
     env_file:
@@ -19,6 +23,10 @@ services:
       - "./bot/database/init/DDL_create_API_schema.sql:/docker-entrypoint-initdb.d/06_create_API_schema.sql:Z"
       - "./bot/database/init/DDL_create_procedures.sql:/docker-entrypoint-initdb.d/07_create_procedures.sql:Z"
       - "./bot/database/init/DCL_grant_permissions.sh:/docker-entrypoint-initdb.d/08_grant_permissions.sh:Z"
+    deploy:
+      resources:
+        limits:
+          memory: 200M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -29,8 +37,11 @@ services:
     image: redis:alpine
     container_name: redis-lumia
     restart: unless-stopped
-    ports:
-      - "0.0.0.0:6379:6379"
+    command: redis-server --maxmemory 32mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 64M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -50,4 +61,13 @@ services:
         condition: service_healthy
     volumes:
       - ".:/app:Z"
+    deploy:
+      resources:
+        limits:
+          memory: 500M
+    logging: 
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     command: python bot/aiogram_run.py
