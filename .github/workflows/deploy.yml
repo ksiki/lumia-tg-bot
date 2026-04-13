@@ -19,7 +19,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /path/to/your/project
+            cd /root/lumia-tg-bot
             git fetch origin prod
             git reset --hard origin/prod
             docker compose up -d --build bot
