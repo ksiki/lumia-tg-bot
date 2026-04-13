@@ -107,14 +107,16 @@ async def generate_pdf(data: dict[str, Any], template_name: str, output_filename
         process = await asyncio.create_subprocess_exec(
             'soffice',
             '--headless',
-            '--convert-to',
-            'pdf',
-            '--outdir',
-            str(PREDICTIONS_DIR),
+            '--invisible',
+            '--nodefault',
+            '--nofirststartwizard',
+            '--nologo',
+            '--convert-to', 'pdf',
+            '--outdir', str(PREDICTIONS_DIR),
             str(temp_docx_path),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE
-        ) 
+        )
         await process.communicate()
         
         if not generated_pdf_path.exists():

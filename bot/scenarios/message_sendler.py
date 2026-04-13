@@ -10,7 +10,8 @@ from aiogram.types import (
     InlineKeyboardMarkup, 
     InputMediaPhoto, 
     Message, 
-    ReplyKeyboardMarkup
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove
 )
 from aiogram.fsm.context import FSMContext
 from asyncpg import Record
@@ -30,7 +31,7 @@ async def send_message(
     mes_text: str, 
     state: FSMContext = None, 
     new_state: States = None, 
-    reply_markup: ReplyKeyboardMarkup | InlineKeyboardMarkup = None, 
+    reply_markup: ReplyKeyboardMarkup | InlineKeyboardMarkup = ReplyKeyboardRemove(), 
     message_effect_id: str = None
 ) -> Message:
     LOG.info(f"Sending message to user {message.from_user.id}")

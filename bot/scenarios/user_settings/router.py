@@ -42,6 +42,7 @@ async def send_setting(event: Message | CallbackQuery, state: FSMContext, data_s
         await event.answer("")
 
     message = event if isinstance(event, Message) else event.message
+    await message.delete()
 
     user_id = message.chat.id
     current_sub = await data_services.get_active_subscription(user_id)
@@ -65,8 +66,9 @@ async def send_setting(event: Message | CallbackQuery, state: FSMContext, data_s
     )
 
 @USER_SETTINGS_ROUTER.callback_query(F.data == MENU_CALLBACK_DATA, States.SETTINGS)
-async def open_main_menu(event: Message | CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
-    return await send_main_menu(event, state, data_services)
+async def open_main_menu(callback: CallbackQuery, state: FSMContext, data_services: DataServices) -> Message:
+    await callback.message.delete()
+    return await send_main_menu(callback, state, data_services)
 
 
 #===============================================================================================================================================

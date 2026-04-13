@@ -58,7 +58,7 @@ menu_message: |
   {promotion}
 
   <a href="{dirrect_link}">Помощь, оплата и сотрудничество</a>
-  <a href="{stars_shop_link}">Нужны звезды?</a>
+  <a href="{stars_shop_link}">Нужны звезды? - Покупай здесь!</a>
   <b>Что подсказывает интуиция? ✨</b>
 
 failed_answer_invoice: |

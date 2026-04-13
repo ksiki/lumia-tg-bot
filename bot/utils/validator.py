@@ -9,14 +9,14 @@ from config import OPENSTREETMAP_API
 
 LOG: Final[Logger] = logging.getLogger(__name__)
 
-DATE_FORMAT: Final[str] = "%d.%m.%Y"
+DATE_FORMAT: str = "%d.%m.%Y"
 TIME_PATTERN_BASE: Final[str] = r"^([01]\d|2[0-3]):[0-5]\d"
 TIME_PATTERN_SECONDS: Final[str] = r":[0-5]\d"
 
 GEO_USER_AGENT: Final[dict[str, str]] = {"User-Agent": "MyCityValidatorApp/1.0"}
 GEO_TIMEOUT: Final[float] = 10.0
 MIN_LOYALTY_VAL_LEN: Final[int] = 3
-MIN_CARD_HAND_LEN: Final[int] = 10
+MIN_CARD_HAND_LEN: Final[int] = 50
 
 MODE_FATE_MATRIX: Final[str] = "fate_matrix"
 MODE_HUMAN_DESIGN: Final[str] = "human_design"
@@ -85,7 +85,7 @@ async def is_valid_data_for_prediction(text: str, prediction_type: str) -> bool:
         return is_valid_date(groups[1]) and is_valid_time(groups[2]) and len(groups[5]) >= MIN_LOYALTY_VAL_LEN
     elif prediction_type == MODE_SYNASTRY:
         parts = [line.strip() for line in text.split('\n') if line.strip()]
-        if len(parts) < 50:
+        if len(parts) < 8:
             return False
         first_person_valid = is_valid_date(parts[1]) and is_valid_time(parts[2])
         second_person_valid = is_valid_date(parts[5]) and is_valid_time(parts[6])
@@ -120,13 +120,17 @@ async def is_valid_city(city: str) -> dict[str, str] | None:
             LOG.error(f"Geocoding API connection error: {e}")
             return None
 
-    if not data:
-        LOG.info(f"City '{city}' not found")
-        return None
-
     result = data[0]
     address = result.get("address", {})
-    response_city = address.get("city") or address.get("town") or address.get("village")
+    response_city = (
+        address.get("city") or 
+        address.get("town") or 
+        address.get("village") or 
+        address.get("hamlet") or
+        address.get("state") or       
+        address.get("municipality") or
+        address.get("county")
+    )
 
     if response_city:
         lat = float(result["lat"])

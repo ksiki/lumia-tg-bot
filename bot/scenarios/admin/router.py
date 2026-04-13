@@ -51,6 +51,7 @@ async def admin_handler(message: Message, data_services: DataServices) -> Messag
 
     try:
         sub_command = command_parts[1]
+        LOG.info(f"Admin panel params: {str(command_parts)}")
         match sub_command:
             case str(c) if c == CMD_USER:
                 return await user_info(message, data_services, int(command_parts[2]))
@@ -130,8 +131,8 @@ async def gift_subscription(message: Message, data_services: DataServices, user_
         transaction_id=None,
         start_date=now.date(),
         end_date=now.date() + timedelta(days=days),
-        start_time=now.time(),
-        type=ADMIN_GIFT_TYPE
+        created_at_time=now.time(),
+        status=ADMIN_GIFT_TYPE
     )
     
     await data_services.add_new_subscription(sub_dto)
@@ -143,7 +144,7 @@ async def get_token(message: Message, data_services: DataServices, tran_id: int)
     transaction = await data_services.get_transaction(tran_id)
     if transaction:
         LOG.info(f"Token retrieved for transaction {tran_id}")
-        return await send_message(message, transaction["token"])
+        return await send_message(message, str(transaction["token"] or "Token in transaction is <b>null</b>"))
 
 
 async def refund_stars_by_tran_id(message: Message, data_services: DataServices, tran_id: int) -> Message | None:
