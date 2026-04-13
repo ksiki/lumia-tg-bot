@@ -1,10 +1,10 @@
 import pytest
 import respx
 from httpx import Response
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 from contextlib import nullcontext as does_not_raise
 
-from bot.utils.validator import is_valid_city, is_valid_date, is_valid_time
+from bot.utils.validator import is_valid_city, is_valid_data_for_prediction, is_valid_date, is_valid_time
 
 
 class TestValidator:
@@ -93,3 +93,42 @@ class TestValidator:
             )
             result = await is_valid_city(city_input)
             assert result is None
+
+    @pytest.mark.asyncio
+    async def test_predict_fate_matrix_valid(self):
+        text = "22.05.2003\n15:30\nМинск"
+
+        with patch("bot.utils.validator.is_valid_city", new_callable=AsyncMock) as mock_city:
+            mock_city.return_value = {"city": "Минск", "timezone": "Europe/Minsk"}
+            
+            result = await is_valid_data_for_prediction(text, "fate_matrix")
+            assert result is True
+
+    @pytest.mark.asyncio
+    async def test_predict_human_design_valid(self):
+        text = "Иван\n22.05.2003\n15:30\nМосква"
+        result = await is_valid_data_for_prediction(text, "human_design")
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_predict_synastry_valid(self):
+        text = "Аня\n01.01.2000\n10:00\nКиев\n\nОлег\n02.02.1995\n12:00\nРига"
+        result = await is_valid_data_for_prediction(text, "deep_compatibility_analysis_synastry")
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_predict_loyalty_invalid_text_len(self):
+        text = "Имя\n22.05.2003\n15:30\nГород\nЯ"
+        result = await is_valid_data_for_prediction(text, "test_of_loyalty")
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_predict_card_hand_valid(self):
+        text = "Это длинный текст для расклада на картах"
+        result = await is_valid_data_for_prediction(text, "one_time_deep_seven_card_hand")
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_predict_invalid_mode(self):
+        result = await is_valid_data_for_prediction("любой текст", "invalid_mode")
+        assert result is False

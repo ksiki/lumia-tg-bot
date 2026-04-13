@@ -85,7 +85,7 @@ async def is_valid_data_for_prediction(text: str, prediction_type: str) -> bool:
         return is_valid_date(groups[1]) and is_valid_time(groups[2]) and len(groups[5]) >= MIN_LOYALTY_VAL_LEN
     elif prediction_type == MODE_SYNASTRY:
         parts = [line.strip() for line in text.split('\n') if line.strip()]
-        if len(parts) < 8:
+        if len(parts) < 50:
             return False
         first_person_valid = is_valid_date(parts[1]) and is_valid_time(parts[2])
         second_person_valid = is_valid_date(parts[5]) and is_valid_time(parts[6])

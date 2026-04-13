@@ -49,7 +49,7 @@ create table if not exists dwh.f_prediction (
 	id bigserial not null,
 	user_id bigint not null,
 	date_id integer not null,
-    transaction_id bigint not null,
+    transaction_id bigint,
 	type_id smallint not null,
     category varchar(50) not null,
 	prediction jsonb not null,
