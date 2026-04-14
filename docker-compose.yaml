@@ -12,7 +12,7 @@ services:
     env_file:
       - .docker.env
     ports:
-      - "0.0.0.0:5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - "./postgres_data:/var/lib/postgresql:Z"
       - "./bot/database/init/DDL_create_dwh_schema.sql:/docker-entrypoint-initdb.d/01_create_dwh_schema.sql:Z"
