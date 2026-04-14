@@ -720,6 +720,7 @@ $$;
 create or replace procedure api.add_prediction(
 	p_user_id bigint,
 	p_date_prediction date,
+	p_time time,
 	p_transaction_id bigint,
 	p_type_str_id varchar(100),
 	p_category varchar(50),
@@ -767,6 +768,7 @@ begin
 	insert into dwh.f_prediction (
 		user_id,
 		date_id,
+		time,
 		transaction_id,
 		type_id,
 		category,
@@ -778,6 +780,7 @@ begin
 	values (
 		v_user_last_version_id,
 		v_date_id,
+		p_time,
 		p_transaction_id,
 		v_type_id,
 		p_category,

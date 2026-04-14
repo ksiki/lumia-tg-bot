@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, time
 from typing import Any
 
 
@@ -7,6 +7,7 @@ from typing import Any
 class PredictionDTO:
     user_id: int
     prediction_date: date
+    time: time
     transaction_id: int | None
     type: str
     category: str

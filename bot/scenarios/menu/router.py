@@ -311,6 +311,7 @@ async def handle_user_request(
     pred_dto = PredictionDTO(
         tran_dto.user_id, 
         tran_dto.date_transaction,
+        datetime.now().time(),
         None,
         gen_result["type"],
         gen_result["category"],

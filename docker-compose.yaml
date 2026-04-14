@@ -14,7 +14,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - "./postgres_data:/var/lib/postgresql:Z"
+      - "./postgres_data:/var/lib/postgresql/data:Z"
       - "./bot/database/init/DDL_create_dwh_schema.sql:/docker-entrypoint-initdb.d/01_create_dwh_schema.sql:Z"
       - "./bot/database/init/DDL_create_dim_tables.sql:/docker-entrypoint-initdb.d/02_create_dim_tables.sql:Z"
       - "./bot/database/init/DML_load_dimensions.sql:/docker-entrypoint-initdb.d/03_load_dimensions.sql:Z"
@@ -54,6 +54,8 @@ services:
     dns:
       - 8.8.8.8
     restart: always
+    environment:
+      - TZ=Europe/Minsk
     depends_on:
       postgres:
         condition: service_healthy

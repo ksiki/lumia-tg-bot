@@ -120,6 +120,10 @@ async def is_valid_city(city: str) -> dict[str, str] | None:
             LOG.error(f"Geocoding API connection error: {e}")
             return None
 
+    if not data:
+        LOG.info(f"City '{city}' not found in Geocoding API")
+        return None
+
     result = data[0]
     address = result.get("address", {})
     response_city = (

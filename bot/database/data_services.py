@@ -142,6 +142,7 @@ class DataServices:
             new_pred_dto = PredictionDTO(
                 prediction_dto.user_id,
                 prediction_dto.prediction_date,
+                prediction_dto.time,
                 transaction_id,
                 prediction_dto.type,
                 prediction_dto.category,

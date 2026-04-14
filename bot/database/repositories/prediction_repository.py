@@ -11,13 +11,14 @@ class PredictionRepository(BaseRepository):
         super().__init__(pool)
 
     async def add_prediction(self, prediction: PredictionDTO, connection = None) -> int:
-        query = "call api.add_prediction($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)"
+        query = "call api.add_prediction($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"
 
         conn = connection if connection else self._pool
         prediction_id = await conn.fetchval(
             query,
             prediction.user_id, 
             prediction.prediction_date, 
+            prediction.time,
             prediction.transaction_id,
             prediction.type, 
             prediction.category,
